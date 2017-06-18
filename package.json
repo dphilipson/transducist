@@ -1,0 +1,61 @@
+{
+  "name": "typescript-transducers",
+  "version": "0.1.0",
+  "description": "Convenient TypeScript wrapper of transducers-js.",
+  "main": "dist/index.js",
+  "types": "dist/index",
+  "files": [
+    "dist/"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dphilipson/typescript-transducers.git"
+  },
+  "homepage": "https://github.com/dphilipson/typescript-transducers",
+  "bugs": {
+    "url": "https://github.com/dphilipson/typescript-transducers/issues",
+    "email": "david.philipson@gmail.com"
+  },
+  "author": "David Philipson <david.philipson@gmail.com> (http://dphil.me)",
+  "license": "MIT",
+  "scripts": {
+    "build": "yarn run clean && tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "format": "yarn run format-glob -- \"'src/**/*.{ts,tsx}'\"",
+    "format-glob": "prettier --tab-width 4 --trailing-comma all --write",
+    "jest": "jest",
+    "jest-watch": "yarn run jest -- --watch",
+    "lint": "tslint --project .",
+    "precommit": "lint-staged",
+    "test": "yarn run lint && tsc && yarn run jest",
+    "watch": "tsc --watch"
+  },
+  "jest": {
+    "transform": {
+      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "format-glob",
+      "yarn run lint -- --fix",
+      "git add"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^20.0.0",
+    "husky": "^0.13.4",
+    "jest": "^20.0.4",
+    "lint-staged": "^3.6.1",
+    "prettier": "^1.4.4",
+    "ts-jest": "^20.0.6",
+    "tslint": "^5.4.3",
+    "typescript": "^2.3.4"
+  }
+}

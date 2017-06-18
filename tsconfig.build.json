@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "inlineSources": true,
+    "noEmit": false,
+    "outDir": "dist",
+    "sourceMap": true
+  },
+  "exclude": [
+    "__tests__/**/*"
+  ],
+  "extends": "./tsconfig.json"
+}
