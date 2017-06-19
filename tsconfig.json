@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "lib": [
+      "es5",
+      "es2015.iterable"
+    ],
     "module": "commonjs",
     "noEmit": true,
     "noFallthroughCasesInSwitch": true,

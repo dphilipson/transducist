@@ -27,8 +27,8 @@
     "jest-watch": "yarn run jest -- --watch",
     "lint": "tslint --project .",
     "precommit": "lint-staged",
-    "test": "yarn run lint && tsc && yarn run jest",
-    "watch": "tsc --watch"
+    "prepublish": "yarn run build",
+    "test": "yarn run lint && tsc && yarn run jest"
   },
   "jest": {
     "transform": {
@@ -57,5 +57,8 @@
     "ts-jest": "^20.0.6",
     "tslint": "^5.4.3",
     "typescript": "^2.3.4"
+  },
+  "dependencies": {
+    "transducers-js": "^0.4.174"
   }
 }
