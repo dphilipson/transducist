@@ -1,7 +1,44 @@
 import * as t from "transducers-js";
 
+const ITERATOR_SYMBOL = typeof Symbol !== "undefined"
+    ? Symbol.iterator
+    : "@@iterator";
+
+// ----- Common transducer interfaces -----
+
+export interface Reduced<TResult> {
+    ["@@transducer/reduced"]: boolean;
+    ["@@transducer/value"]: TResult;
+}
+
+export type Reducer<TResult, TInput> = (
+    result: TResult,
+    input: TInput,
+) => TResult;
+
+export type Transducer<TInput, TOutput> = <TResult, TCompleteResult>(
+    xf: CompletingTransformer<TResult, TCompleteResult, TOutput>,
+) => CompletingTransformer<TResult, TCompleteResult, TInput>;
+
+export interface CompletingTransformer<TResult, TCompleteResult, TInput> {
+    ["@@transducer/init"](): TResult | void;
+    ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult>;
+    ["@@transducer/result"](result: TResult): TCompleteResult;
+}
+
+export type Transformer<TResult, TInput> = CompletingTransformer<
+    TResult,
+    TResult,
+    TInput
+>;
+
+// ----- Library interfaces -----
+
 export interface TransformChain<T> {
-    compose<U>(transducer: t.Transducer<T, U>): TransformChain<U>;
+    compose<U>(transducer: Transducer<T, U>): TransformChain<U>;
 
     map<U>(f: (item: T) => U): TransformChain<U>;
     filter(pred: (item: T) => boolean): TransformChain<T>;
@@ -19,11 +56,11 @@ export interface TransformChain<T> {
     interpose(separator: T): TransformChain<T>;
 
     reduce<TResult>(
-        reducer: t.Reducer<TResult, T>,
+        reducer: Reducer<TResult, T>,
         initialValue: TResult,
     ): TResult;
     reduce<TResult, TCompleteResult>(
-        transformer: t.CompletingTransformer<TResult, TCompleteResult, T>,
+        transformer: CompletingTransformer<TResult, TCompleteResult, T>,
         initialValue?: TResult,
     ): TCompleteResult;
 
@@ -34,7 +71,7 @@ export interface TransformChain<T> {
 }
 
 export interface TransducerBuilder<TBase, T> {
-    compose<U>(transducer: t.Transducer<T, U>): TransducerBuilder<TBase, U>;
+    compose<U>(transducer: Transducer<T, U>): TransducerBuilder<TBase, U>;
 
     map<U>(f: (item: T) => U): TransducerBuilder<TBase, U>;
     filter(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
@@ -51,8 +88,12 @@ export interface TransducerBuilder<TBase, T> {
     partitionBy(pred: (item: T) => boolean): TransducerBuilder<TBase, T[]>;
     interpose(separator: T): TransducerBuilder<TBase, T>;
 
-    build(): t.Transducer<TBase, T>;
+    build(): Transducer<TBase, T>;
 }
+
+// ----- Implementation begins -----
+
+// ----- Main chain class implementation -----
 
 export function chainFrom<T>(collection: Iterable<T>): TransformChain<T> {
     return new TransducerChain<T, T>(collection);
@@ -66,18 +107,16 @@ type CombinedBuilder<TBase, T> = TransformChain<T> &
     TransducerBuilder<TBase, T>;
 
 class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
-    private readonly transducers: Array<t.Transducer<any, any>> = [];
+    private readonly transducers: Array<Transducer<any, any>> = [];
 
     constructor(private readonly collection: Iterable<TBase>) {}
 
-    public compose<U>(
-        transducer: t.Transducer<T, U>,
-    ): CombinedBuilder<TBase, U> {
+    public compose<U>(transducer: Transducer<T, U>): CombinedBuilder<TBase, U> {
         this.transducers.push(transducer);
         return this as any;
     }
 
-    public build(): t.Transducer<TBase, T> {
+    public build(): Transducer<TBase, T> {
         // Don't use comp() from transducers-js because it fails on 0 or 1
         // inputs.
         return (x: any) => {
@@ -90,17 +129,17 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public reduce<TResult>(
-        reducer: t.Reducer<TResult, T>,
+        reducer: Reducer<TResult, T>,
         initialValue: TResult,
     ): TResult;
     public reduce<TResult, TCompleteResult>(
-        transformer: t.CompletingTransformer<TResult, TCompleteResult, T>,
+        transformer: CompletingTransformer<TResult, TCompleteResult, T>,
         initialValue?: TResult,
     ): TCompleteResult;
     public reduce<TResult, TCompleteResult>(
         transformer:
-            | t.Reducer<TResult, T>
-            | t.CompletingTransformer<TResult, TCompleteResult, T>,
+            | Reducer<TResult, T>
+            | CompletingTransformer<TResult, TCompleteResult, T>,
         initialValue: TResult,
     ): TCompleteResult {
         // Need to contort the type system a bit to get this overload.
@@ -137,10 +176,13 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public toIterator(): IterableIterator<T> {
-        return new TransducerIterable(
+        const iterable: Iterator<T> = new TransducerIterable(
             this.build(),
-            this.collection[Symbol.iterator](),
+            getIterator(this.collection),
         );
+        // We can't satisfy the IterableIterator interface while functioning in
+        // environments without Symbol, hence the cast.
+        return iterable as any;
     }
 
     public forEach(f: (item: T) => void): void {
@@ -208,17 +250,19 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 }
 
+// ----- Custom transducers -----
+
 type QuittingReducer<TResult, TInput> = (
     result: TResult,
     input: TInput,
 ) => TResult | t.Reduced<TResult>;
 
 class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
-    implements t.CompletingTransformer<TResult, TCompleteResult, TInput> {
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
     private readonly step: QuittingReducer<TResult, TInput>;
 
     constructor(
-        private readonly xf: t.CompletingTransformer<
+        private readonly xf: CompletingTransformer<
             TResult,
             TCompleteResult,
             TOutput
@@ -262,8 +306,8 @@ function makeTransducer<T, U>(
         result: R,
         input: T,
     ) => R | t.Reduced<R>,
-): t.Transducer<T, U> {
-    return <R>(xf: t.CompletingTransformer<R, any, U>) =>
+): Transducer<T, U> {
+    return <R>(xf: CompletingTransformer<R, any, U>) =>
         new SimpleDelegatingTransformer(
             xf,
             (reducer: QuittingReducer<R, U>) => (result: R, input: T) =>
@@ -271,7 +315,7 @@ function makeTransducer<T, U>(
         );
 }
 
-function keep<T, U>(f: (item: T) => U | null | void): t.Transducer<T, U> {
+function keep<T, U>(f: (item: T) => U | null | void): Transducer<T, U> {
     return makeTransducer(<
         R
     >(reducer: QuittingReducer<R, U>, result: R, input: T) => {
@@ -280,7 +324,7 @@ function keep<T, U>(f: (item: T) => U | null | void): t.Transducer<T, U> {
     });
 }
 
-function dedupe<T>(): t.Transducer<T, T> {
+function dedupe<T>(): Transducer<T, T> {
     let last: T | {} = {};
     return makeTransducer(<
         R
@@ -296,7 +340,7 @@ function dedupe<T>(): t.Transducer<T, T> {
 
 // Don't use take() from transducers-js because it reads one more element than
 // necessary.
-function take<T>(n: number): t.Transducer<T, T> {
+function take<T>(n: number): Transducer<T, T> {
     let i = 0;
     return makeTransducer(<
         R
@@ -311,7 +355,7 @@ function take<T>(n: number): t.Transducer<T, T> {
     });
 }
 
-function interpose<T>(separator: T): t.Transducer<T, T> {
+function interpose<T>(separator: T): Transducer<T, T> {
     let isStarted = false;
     return makeTransducer(<
         R
@@ -330,7 +374,9 @@ function interpose<T>(separator: T): t.Transducer<T, T> {
     });
 }
 
-class ForEachTransformer<T> implements t.Transformer<void, T> {
+// ----- Custom transformers -----
+
+class ForEachTransformer<T> implements Transformer<void, T> {
     constructor(private readonly f: (input: T) => void) {}
 
     public ["@@transducer/init"]() {
@@ -346,17 +392,17 @@ class ForEachTransformer<T> implements t.Transformer<void, T> {
     }
 }
 
-const FIRST_TRANSFORMER: t.Transformer<any, any> = {
+const FIRST_TRANSFORMER: Transformer<any, any> = {
     ["@@transducer/init"]: () => null,
     ["@@transducer/result"]: (result: any) => result,
     ["@@transducer/step"]: (_: any, input: any) => t.reduced(input),
 };
 
-function firstTransformer<T>(): t.Transformer<T | null, T> {
+function firstTransformer<T>(): Transformer<T | null, T> {
     return FIRST_TRANSFORMER;
 }
 
-const TO_ARRAY_TRANSFORMER: t.Transformer<any[], any> = {
+const TO_ARRAY_TRANSFORMER: Transformer<any[], any> = {
     ["@@transducer/init"]: () => [],
     ["@@transducer/result"]: (result: any[]) => result,
     ["@@transducer/step"]: (result: any[], input: any) => {
@@ -365,23 +411,25 @@ const TO_ARRAY_TRANSFORMER: t.Transformer<any[], any> = {
     },
 };
 
-function toArrayTransformer<T>(): t.Transformer<T[], T> {
+function toArrayTransformer<T>(): Transformer<T[], T> {
     return TO_ARRAY_TRANSFORMER;
 }
 
-class TransducerIterable<TInput, TOutput> implements IterableIterator<TOutput> {
-    private readonly xfToArray: t.Transformer<TOutput[], TInput>;
+// ----- Lazy computation -----
+
+class TransducerIterable<TInput, TOutput> implements Iterator<TOutput> {
+    private readonly xfToArray: Transformer<TOutput[], TInput>;
     private upcoming: Iterator<TOutput> = new ArrayIterator([]);
     private hasSeenEnd: boolean = false;
 
     constructor(
-        xf: t.Transducer<TInput, TOutput>,
+        xf: Transducer<TInput, TOutput>,
         private readonly iterator: Iterator<TInput>,
     ) {
         this.xfToArray = xf(toArrayTransformer<TOutput>());
     }
 
-    public [Symbol.iterator](): IterableIterator<TOutput> {
+    public [ITERATOR_SYMBOL]() {
         return this;
     }
 
@@ -411,12 +459,32 @@ class TransducerIterable<TInput, TOutput> implements IterableIterator<TOutput> {
     }
 }
 
-class ArrayIterator<T> implements IterableIterator<T> {
+// ----- Iterator utilities -----
+
+/**
+ * For compatibility with environments where common types aren't iterable.
+ */
+function getIterator<T>(collection: Iterable<T>): Iterator<T> {
+    const anyCollection = collection as any;
+    if (anyCollection[ITERATOR_SYMBOL]) {
+        return anyCollection[ITERATOR_SYMBOL]();
+    } else if (Array.isArray(anyCollection)) {
+        return new ArrayIterator(anyCollection);
+    } else if (typeof anyCollection === "string") {
+        return new ArrayIterator(anyCollection.split("")) as any;
+    } else {
+        throw new Error(
+            "Cannot get iterator of non iterable value: " + collection,
+        );
+    }
+}
+
+class ArrayIterator<T> implements Iterator<T> {
     private i: number = 0;
 
     constructor(private readonly array: T[]) {}
 
-    public [Symbol.iterator]() {
+    public [ITERATOR_SYMBOL]() {
         return this;
     }
 
