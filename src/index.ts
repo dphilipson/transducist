@@ -14,7 +14,7 @@ export interface TransformChain<T> {
     takeNth(n: number): TransformChain<T>;
     drop(n: number): TransformChain<T>;
     dropWhile(pred: (item: T) => boolean): TransformChain<T>;
-    partition(n: number): TransformChain<T[]>;
+    partitionAll(n: number): TransformChain<T[]>;
     partitionBy(pred: (item: T) => any): TransformChain<T[]>;
     interpose(separator: T): TransformChain<T>;
 
@@ -47,7 +47,7 @@ export interface TransducerBuilder<TBase, T> {
     takeNth(n: number): TransducerBuilder<TBase, T>;
     drop(n: number): TransducerBuilder<TBase, T>;
     dropWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
-    partition(n: number): TransducerBuilder<TBase, T[]>;
+    partitionAll(n: number): TransducerBuilder<TBase, T[]>;
     partitionBy(pred: (item: T) => boolean): TransducerBuilder<TBase, T[]>;
     interpose(separator: T): TransducerBuilder<TBase, T>;
 
@@ -176,7 +176,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public take(n: number): CombinedBuilder<TBase, T> {
-        return this.compose(t.take<T>(n));
+        return this.compose(take<T>(n));
     }
 
     public takeWhile(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
@@ -195,7 +195,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(t.dropWhile(pred));
     }
 
-    public partition(n: number): CombinedBuilder<TBase, T[]> {
+    public partitionAll(n: number): CombinedBuilder<TBase, T[]> {
         return this.compose(t.partitionAll<T>(n));
     }
 
@@ -208,18 +208,14 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 }
 
-type ShortCircuitingReducer<TResult, TInput> = (
+type QuittingReducer<TResult, TInput> = (
     result: TResult,
     input: TInput,
 ) => TResult | t.Reduced<TResult>;
 
-type TransducerBaseFunction<TInput, TOutput> = <TResult>(
-    reducer: ShortCircuitingReducer<TResult, TOutput>,
-) => ShortCircuitingReducer<TResult, TInput>;
-
 class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
     implements t.CompletingTransformer<TResult, TCompleteResult, TInput> {
-    private readonly step: ShortCircuitingReducer<TResult, TInput>;
+    private readonly step: QuittingReducer<TResult, TInput>;
 
     constructor(
         private readonly xf: t.CompletingTransformer<
@@ -227,7 +223,9 @@ class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
             TCompleteResult,
             TOutput
         >,
-        f: TransducerBaseFunction<TInput, TOutput>,
+        f: <TResult>(
+            reducer: QuittingReducer<TResult, TOutput>,
+        ) => QuittingReducer<TResult, TInput>,
     ) {
         this.step = f((result: TResult, input: TOutput) =>
             xf["@@transducer/step"](result, input),
@@ -253,54 +251,82 @@ class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
 /**
  * A helper for creating transducers. It makes defining a reducer equivalent to
  * defining a function of type (reducer -> reducer), which is much less verbose
- * than the full definition of (transformer -> transformer).
+ * than the full definition of (transformer -> transformer). After uncurrying,
+ * (reducer -> reducer) is equivalent to the actual type used here:
+ *
+ *   ((reducer, result, input) -> newResult).
  */
-function simpleTransducer<T, U>(
-    f: TransducerBaseFunction<T, U>,
+function makeTransducer<T, U>(
+    f: <R>(
+        reducer: QuittingReducer<R, U>,
+        result: R,
+        input: T,
+    ) => R | t.Reduced<R>,
 ): t.Transducer<T, U> {
-    return (xf: t.CompletingTransformer<any, any, U>) =>
-        new SimpleDelegatingTransformer(xf, f);
+    return <R>(xf: t.CompletingTransformer<R, any, U>) =>
+        new SimpleDelegatingTransformer(
+            xf,
+            (reducer: QuittingReducer<R, U>) => (result: R, input: T) =>
+                f(reducer, result, input),
+        );
 }
 
 function keep<T, U>(f: (item: T) => U | null | void): t.Transducer<T, U> {
-    return simpleTransducer(<R>(reducer: ShortCircuitingReducer<R, U>) => {
-        return (result: R, input: T) => {
-            const output = f(input);
-            return output == null ? result : reducer(result, output);
-        };
+    return makeTransducer(<
+        R
+    >(reducer: QuittingReducer<R, U>, result: R, input: T) => {
+        const output = f(input);
+        return output == null ? result : reducer(result, output);
     });
 }
 
 function dedupe<T>(): t.Transducer<T, T> {
     let last: T | {} = {};
-    return simpleTransducer(<R>(reducer: ShortCircuitingReducer<R, T>) => {
-        return (result: R, input: T) => {
-            if (input !== last) {
-                last = input;
-                return reducer(result, input);
-            } else {
-                return result;
-            }
-        };
+    return makeTransducer(<
+        R
+    >(reducer: QuittingReducer<R, T>, result: R, input: T) => {
+        if (input !== last) {
+            last = input;
+            return reducer(result, input);
+        } else {
+            return result;
+        }
+    });
+}
+
+// Don't use take() from transducers-js because it reads one more element than
+// necessary.
+function take<T>(n: number): t.Transducer<T, T> {
+    let i = 0;
+    return makeTransducer(<
+        R
+    >(reducer: QuittingReducer<R, T>, result: R, input: T) => {
+        if (i < n) {
+            i++;
+            const output = reducer(result, input);
+            return i === n ? t.reduced(output) : output;
+        } else {
+            return t.reduced(result);
+        }
     });
 }
 
 function interpose<T>(separator: T): t.Transducer<T, T> {
-    let isStarted: boolean = false;
-    return simpleTransducer(<R>(reducer: ShortCircuitingReducer<R, T>) => {
-        return (result: R, input: T) => {
-            if (isStarted) {
-                const withSeparator = reducer(result, separator);
-                if (t.isReduced(withSeparator)) {
-                    return withSeparator;
-                } else {
-                    return reducer(withSeparator as R, input);
-                }
+    let isStarted = false;
+    return makeTransducer(<
+        R
+    >(reducer: QuittingReducer<R, T>, result: R, input: T) => {
+        if (isStarted) {
+            const withSeparator = reducer(result, separator);
+            if (t.isReduced(withSeparator)) {
+                return withSeparator;
             } else {
-                isStarted = true;
-                return reducer(result, input);
+                return reducer(withSeparator as R, input);
             }
-        };
+        } else {
+            isStarted = true;
+            return reducer(result, input);
+        }
     });
 }
 

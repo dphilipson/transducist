@@ -101,6 +101,13 @@ describe("take()", () => {
         const result = chainFrom([1, 2, 3, 4, 5]).take(3).toArray();
         expect(result).toEqual([1, 2, 3]);
     });
+
+    it("should terminate after pulling n elements", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator).take(2).toArray();
+        expect(result).toEqual([1, 2]);
+        expect(rangeIterator.next().value).toEqual(3);
+    });
 });
 
 describe("takeWhile()", () => {
@@ -135,9 +142,9 @@ describe("dropWhile()", () => {
     });
 });
 
-describe("partition()", () => {
+describe("partitionAll()", () => {
     it("should group elements by the specified size", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).partition(2).toArray();
+        const result = chainFrom([1, 2, 3, 4, 5]).partitionAll(2).toArray();
         expect(result).toEqual([[1, 2], [3, 4], [5]]);
     });
 });
@@ -202,6 +209,16 @@ describe("toIterator()", () => {
         expect(result).toEqual([1, 2]);
         expect(rangeIterator.next().value).toEqual(3);
     });
+
+    it("should work with mapcat()", () => {
+        // This tests that the iterator works with transducers that produce
+        // multiple outputs for one input.
+        const iterator = chainFrom(["a", "bb", "ccc"])
+            .mapcat(s => s.split(""))
+            .toIterator();
+        const result = Array.from(iterator);
+        expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
+    });
 });
 
 describe("forEach()", () => {
@@ -246,8 +263,8 @@ describe("transducer builder", () => {
             .map(x => x + 1)
             .filter(x => x % 2 === 0)
             .build();
-        const result = t.into([], transducer, [1, 2, 3]);
-        expect(result).toEqual([2, 4]);
+        const result = t.into([], transducer, [1, 2, 3, 4, 5]);
+        expect(result).toEqual([2, 4, 6]);
     });
 });
 
