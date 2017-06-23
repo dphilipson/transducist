@@ -95,8 +95,17 @@ export interface TransducerBuilder<TBase, T> {
 
 // ----- Main chain class implementation -----
 
-export function chainFrom<T>(collection: Iterable<T>): TransformChain<T> {
-    return new TransducerChain<T, T>(collection);
+export interface Dictionary<V> {
+    [key: string]: V;
+}
+
+export function chainFrom<T>(collection: Iterable<T>): TransformChain<T>;
+export function chainFrom<V>(
+    collection: Dictionary<V>,
+): TransformChain<[string, V]>;
+export function chainFrom(collection: any): any {
+    // transduce() from transducers-js will handle object vs iterable.
+    return new TransducerChain(collection);
 }
 
 export function transducerBuilder<T>(): TransducerBuilder<T, T> {
@@ -461,10 +470,19 @@ class TransducerIterable<TInput, TOutput> implements Iterator<TOutput> {
 
 // ----- Iterator utilities -----
 
+function isObject(x: any): boolean {
+    return (
+        x instanceof Object &&
+        Object.getPrototypeOf(x) === Object.getPrototypeOf({})
+    );
+}
+
 /**
  * For compatibility with environments where common types aren't iterable.
  */
-function getIterator<T>(collection: Iterable<T>): Iterator<T> {
+function getIterator<T>(collection: Iterable<T>): Iterator<T>;
+function getIterator<V>(object: Dictionary<V>): Iterator<[string, V]>;
+function getIterator(collection: any): Iterator<any> {
     const anyCollection = collection as any;
     if (anyCollection[ITERATOR_SYMBOL]) {
         return anyCollection[ITERATOR_SYMBOL]();
@@ -472,6 +490,13 @@ function getIterator<T>(collection: Iterable<T>): Iterator<T> {
         return new ArrayIterator(anyCollection);
     } else if (typeof anyCollection === "string") {
         return new ArrayIterator(anyCollection.split("")) as any;
+    } else if (isObject(anyCollection)) {
+        return new ArrayIterator(
+            Object.keys(anyCollection).map((key: string) => [
+                key,
+                anyCollection[key],
+            ]),
+        );
     } else {
         throw new Error(
             "Cannot get iterator of non iterable value: " + collection,

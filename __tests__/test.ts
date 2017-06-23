@@ -26,6 +26,15 @@ describe("transformer chain", () => {
         expect(result1).toEqual([2, 4, 6]);
         expect(result2).toEqual([3, 5]);
     });
+
+    it("should iterate over key-value pairs for objects", () => {
+        const input = { a: 1, b: 2, c: 3 };
+        const result = chainFrom(input)
+            .filter(([key, value]) => key === "b" || value === 3)
+            .toArray();
+        expect(result).toContainEqual(["b", 2]);
+        expect(result).toContainEqual(["c", 3]);
+    });
 });
 
 describe("compose()", () => {
@@ -218,6 +227,15 @@ describe("toIterator()", () => {
             .toIterator();
         const result = Array.from(iterator);
         expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
+    });
+
+    it("should work when iterating objects", () => {
+        const iterator = chainFrom({ a: 1, b: 2, c: 3 })
+            .filter(([key, value]) => key === "b" || value === 3)
+            .toIterator();
+        const result = Array.from(iterator);
+        expect(result).toContainEqual(["b", 2]);
+        expect(result).toContainEqual(["c", 3]);
     });
 });
 
