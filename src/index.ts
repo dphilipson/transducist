@@ -144,7 +144,10 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public forEach(f: (item: T) => void): void {
-        this.reduce(new ForEach(f));
+        this.reduce(
+            new SimpleTransformer((_: void, input: T) => f(input)),
+            0 as any, // We need any non-undefined initial value.
+        );
     }
 
     public first(): T | null {
@@ -208,146 +211,78 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 }
 
-class Keep<TResult, TCompleteResult, TInput, TOutput>
-    implements t.CompletingTransformer<TResult, TCompleteResult, TInput> {
+class SimpleTransformer<TResult, TInput>
+    implements t.Transformer<TResult, TInput> {
     constructor(
-        private readonly f: (x: TInput) => TOutput | null | void,
-        private readonly xf: t.CompletingTransformer<
-            TResult,
-            TCompleteResult,
-            TOutput
-        >,
+        private readonly reducer: (
+            result: TResult,
+            input: TInput,
+        ) => TResult | t.Reduced<TResult>,
     ) {}
 
-    public ["@@transducer/init"](): TResult | void {
-        return this.xf["@@transducer/init"]();
+    public ["@@transducer/init"](): TResult {
+        throw new Error("init not implemented");
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
+    public ["@@transducer/result"](result: TResult): TResult {
+        return result;
     }
 
     public ["@@transducer/step"](
         result: TResult,
         input: TInput,
     ): TResult | t.Reduced<TResult> {
-        const output = this.f(input);
-        return output == null
-            ? result
-            : this.xf["@@transducer/step"](result, output);
+        return this.reducer(result, input);
     }
 }
 
 function keep<T, U>(f: (item: T) => U | null | void): t.Transducer<T, U> {
-    return <TResult, TCompleteResult>(
-        xf: t.CompletingTransformer<TResult, TCompleteResult, U>,
-    ) => new Keep<TResult, TCompleteResult, T, U>(f, xf);
-}
-
-class Dedupe<TResult, TCompleteResult, TInput>
-    implements t.CompletingTransformer<TResult, TCompleteResult, TInput> {
-    private last?: TInput;
-
-    constructor(
-        private readonly xf: t.CompletingTransformer<
-            TResult,
-            TCompleteResult,
-            TInput
-        >,
-    ) {}
-
-    public ["@@transducer/init"](): TResult | void {
-        return this.xf["@@transducer/init"]();
-    }
-
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
-    }
-
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): TResult | t.Reduced<TResult> {
-        if (input !== this.last) {
-            this.last = input;
-            return this.xf["@@transducer/step"](result, input);
-        } else {
-            return result;
-        }
-    }
+    return <TResult>(xf: t.CompletingTransformer<TResult, any, U>) =>
+        new SimpleTransformer((result: TResult, input: T) => {
+            const output = f(input);
+            return output == null
+                ? result
+                : xf["@@transducer/step"](result, output);
+        });
 }
 
 function dedupe<T>(): t.Transducer<T, T> {
-    return <TResult, TCompleteResult>(
-        xf: t.CompletingTransformer<TResult, TCompleteResult, T>,
-    ) => new Dedupe(xf);
-}
-
-class Interpose<TResult, TCompleteResult, TInput>
-    implements t.CompletingTransformer<TResult, TCompleteResult, TInput> {
-    private isStarted: boolean = false;
-
-    constructor(
-        private readonly separator: TInput,
-        private readonly xf: t.CompletingTransformer<
-            TResult,
-            TCompleteResult,
-            TInput
-        >,
-    ) {}
-
-    public ["@@transducer/init"](): TResult | void {
-        return this.xf["@@transducer/init"]();
-    }
-
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
-    }
-
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): TResult | t.Reduced<TResult> {
-        if (this.isStarted) {
-            const withSeparator = this.xf["@@transducer/step"](
-                result,
-                this.separator,
-            );
-            if (t.isReduced(withSeparator)) {
-                return withSeparator;
+    return <TResult>(xf: t.CompletingTransformer<TResult, any, T>) => {
+        let last: T | {} = {};
+        return new SimpleTransformer((result: TResult, input: T) => {
+            if (input !== last) {
+                last = input;
+                return xf["@@transducer/step"](result, input);
             } else {
-                return this.xf["@@transducer/step"](
-                    withSeparator as TResult,
-                    input,
-                );
+                return result;
             }
-        } else {
-            this.isStarted = true;
-            return this.xf["@@transducer/step"](result, input);
-        }
-    }
+        });
+    };
 }
 
 function interpose<T>(separator: T): t.Transducer<T, T> {
-    return <TResult, TCompleteResult>(
-        xf: t.CompletingTransformer<TResult, TCompleteResult, T>,
-    ) => new Interpose(separator, xf);
-}
-
-class ForEach<T> implements t.Transformer<void, T> {
-    constructor(private readonly f: (item: T) => void) {}
-
-    public ["@@transducer/init"]() {
-        return undefined;
-    }
-
-    public ["@@transducer/result"]() {
-        return undefined;
-    }
-
-    public ["@@transducer/step"](_: void, input: T) {
-        return this.f(input);
-    }
+    return <TResult>(xf: t.CompletingTransformer<TResult, any, T>) => {
+        let isStarted: boolean = false;
+        return new SimpleTransformer((result: TResult, input: T) => {
+            if (isStarted) {
+                const withSeparator = xf["@@transducer/step"](
+                    result,
+                    separator,
+                );
+                if (t.isReduced(withSeparator)) {
+                    return withSeparator;
+                } else {
+                    return xf["@@transducer/step"](
+                        withSeparator as TResult,
+                        input,
+                    );
+                }
+            } else {
+                isStarted = true;
+                return xf["@@transducer/step"](result, input);
+            }
+        });
+    };
 }
 
 const firstTransformerConstant: t.Transformer<any, any> = {
