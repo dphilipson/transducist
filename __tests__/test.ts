@@ -191,15 +191,16 @@ describe("reduce()", () => {
 describe("toIterator()", () => {
     it("should return an iterator of the elements", () => {
         const iterator = chainFrom([1, 2, 3]).map(n => 2 * n).toIterator();
-        const result: number[] = [];
-        for (
-            let { done, value } = iterator.next();
-            !done;
-            { done, value } = iterator.next()
-        ) {
-            result.push(value);
-        }
+        const result = Array.from(iterator);
         expect(result).toEqual([2, 4, 6]);
+    });
+
+    it("should respect early termination", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const truncatedIterator = chainFrom(rangeIterator).take(2).toIterator();
+        const result = Array.from(truncatedIterator);
+        expect(result).toEqual([1, 2]);
+        expect(rangeIterator.next().value).toEqual(3);
     });
 });
 
@@ -223,6 +224,13 @@ describe("first()", () => {
     it("should return null if there are no elements", () => {
         const result = chainFrom(input).filter(n => n > 10).first();
         expect(result).toBeNull();
+    });
+
+    it("should terminate computation", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator).map(x => 10 * x).first();
+        expect(result).toEqual(10);
+        expect(rangeIterator.next().value).toEqual(2);
     });
 });
 

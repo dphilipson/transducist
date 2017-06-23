@@ -144,10 +144,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public forEach(f: (item: T) => void): void {
-        this.reduce(
-            new SimpleTransformer((_: void, input: T) => f(input)),
-            0 as any, // We need any non-undefined initial value.
-        );
+        this.reduce(new ForEachTransformer(f));
     }
 
     public first(): T | null {
@@ -211,114 +208,178 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 }
 
-class SimpleTransformer<TResult, TInput>
-    implements t.Transformer<TResult, TInput> {
-    constructor(
-        private readonly reducer: (
-            result: TResult,
-            input: TInput,
-        ) => TResult | t.Reduced<TResult>,
-    ) {}
+type ShortCircuitingReducer<TResult, TInput> = (
+    result: TResult,
+    input: TInput,
+) => TResult | t.Reduced<TResult>;
 
-    public ["@@transducer/init"](): TResult {
-        throw new Error("init not implemented");
+type TransducerBaseFunction<TInput, TOutput> = <TResult>(
+    reducer: ShortCircuitingReducer<TResult, TOutput>,
+) => ShortCircuitingReducer<TResult, TInput>;
+
+class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
+    implements t.CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private readonly step: ShortCircuitingReducer<TResult, TInput>;
+
+    constructor(
+        private readonly xf: t.CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TOutput
+        >,
+        f: TransducerBaseFunction<TInput, TOutput>,
+    ) {
+        this.step = f((result: TResult, input: TOutput) =>
+            xf["@@transducer/step"](result, input),
+        );
     }
 
-    public ["@@transducer/result"](result: TResult): TResult {
-        return result;
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
     }
 
     public ["@@transducer/step"](
         result: TResult,
         input: TInput,
     ): TResult | t.Reduced<TResult> {
-        return this.reducer(result, input);
+        return this.step(result, input);
     }
 }
 
+/**
+ * A helper for creating transducers. It makes defining a reducer equivalent to
+ * defining a function of type (reducer -> reducer), which is much less verbose
+ * than the full definition of (transformer -> transformer).
+ */
+function simpleTransducer<T, U>(
+    f: TransducerBaseFunction<T, U>,
+): t.Transducer<T, U> {
+    return (xf: t.CompletingTransformer<any, any, U>) =>
+        new SimpleDelegatingTransformer(xf, f);
+}
+
 function keep<T, U>(f: (item: T) => U | null | void): t.Transducer<T, U> {
-    return <TResult>(xf: t.CompletingTransformer<TResult, any, U>) =>
-        new SimpleTransformer((result: TResult, input: T) => {
+    return simpleTransducer(<R>(reducer: ShortCircuitingReducer<R, U>) => {
+        return (result: R, input: T) => {
             const output = f(input);
-            return output == null
-                ? result
-                : xf["@@transducer/step"](result, output);
-        });
+            return output == null ? result : reducer(result, output);
+        };
+    });
 }
 
 function dedupe<T>(): t.Transducer<T, T> {
-    return <TResult>(xf: t.CompletingTransformer<TResult, any, T>) => {
-        let last: T | {} = {};
-        return new SimpleTransformer((result: TResult, input: T) => {
+    let last: T | {} = {};
+    return simpleTransducer(<R>(reducer: ShortCircuitingReducer<R, T>) => {
+        return (result: R, input: T) => {
             if (input !== last) {
                 last = input;
-                return xf["@@transducer/step"](result, input);
+                return reducer(result, input);
             } else {
                 return result;
             }
-        });
-    };
+        };
+    });
 }
 
 function interpose<T>(separator: T): t.Transducer<T, T> {
-    return <TResult>(xf: t.CompletingTransformer<TResult, any, T>) => {
-        let isStarted: boolean = false;
-        return new SimpleTransformer((result: TResult, input: T) => {
+    let isStarted: boolean = false;
+    return simpleTransducer(<R>(reducer: ShortCircuitingReducer<R, T>) => {
+        return (result: R, input: T) => {
             if (isStarted) {
-                const withSeparator = xf["@@transducer/step"](
-                    result,
-                    separator,
-                );
+                const withSeparator = reducer(result, separator);
                 if (t.isReduced(withSeparator)) {
                     return withSeparator;
                 } else {
-                    return xf["@@transducer/step"](
-                        withSeparator as TResult,
-                        input,
-                    );
+                    return reducer(withSeparator as R, input);
                 }
             } else {
                 isStarted = true;
-                return xf["@@transducer/step"](result, input);
+                return reducer(result, input);
             }
-        });
-    };
+        };
+    });
 }
 
-const firstTransformerConstant: t.Transformer<any, any> = {
+class ForEachTransformer<T> implements t.Transformer<void, T> {
+    constructor(private readonly f: (input: T) => void) {}
+
+    public ["@@transducer/init"]() {
+        return undefined;
+    }
+
+    public ["@@transducer/result"]() {
+        return undefined;
+    }
+
+    public ["@@transducer/step"](_: void, input: T) {
+        return this.f(input);
+    }
+}
+
+const FIRST_TRANSFORMER: t.Transformer<any, any> = {
     ["@@transducer/init"]: () => null,
     ["@@transducer/result"]: (result: any) => result,
-    ["@@transducer/step"]: (_: void, input: any) => t.reduced(input),
+    ["@@transducer/step"]: (_: any, input: any) => t.reduced(input),
 };
 
 function firstTransformer<T>(): t.Transformer<T | null, T> {
-    return firstTransformerConstant;
+    return FIRST_TRANSFORMER;
+}
+
+const TO_ARRAY_TRANSFORMER: t.Transformer<any[], any> = {
+    ["@@transducer/init"]: () => [],
+    ["@@transducer/result"]: (result: any[]) => result,
+    ["@@transducer/step"]: (result: any[], input: any) => {
+        result.push(input);
+        return result;
+    },
+};
+
+function toArrayTransformer<T>(): t.Transformer<T[], T> {
+    return TO_ARRAY_TRANSFORMER;
 }
 
 class TransducerIterable<TInput, TOutput> implements IterableIterator<TOutput> {
+    private readonly xfToArray: t.Transformer<TOutput[], TInput>;
     private upcoming: Iterator<TOutput> = new ArrayIterator([]);
+    private hasSeenEnd: boolean = false;
 
     constructor(
-        private readonly xf: t.Transducer<TInput, TOutput>,
+        xf: t.Transducer<TInput, TOutput>,
         private readonly iterator: Iterator<TInput>,
-    ) {}
+    ) {
+        this.xfToArray = xf(toArrayTransformer<TOutput>());
+    }
 
     public [Symbol.iterator](): IterableIterator<TOutput> {
         return this;
     }
 
     public next(): IteratorResult<TOutput> {
-        const backlogged = this.upcoming.next();
-        if (!backlogged.done) {
-            return backlogged;
-        } else {
-            const { done, value } = this.iterator.next();
-            if (done) {
-                return { done } as any;
+        while (true) {
+            const backlogged = this.upcoming.next();
+            if (!backlogged.done) {
+                return backlogged;
+            } else if (this.hasSeenEnd) {
+                return { done: true } as any;
             } else {
-                const outValues = t.into([], this.xf, [value]);
-                this.upcoming = new ArrayIterator(outValues);
-                return this.next();
+                const { done, value } = this.iterator.next();
+                if (done) {
+                    return { done } as any;
+                } else {
+                    const outValues = this.xfToArray["@@transducer/step"](
+                        [],
+                        value,
+                    );
+                    if (t.isReduced(outValues)) {
+                        this.hasSeenEnd = true;
+                    }
+                    this.upcoming = new ArrayIterator(t.unreduced(outValues));
+                }
             }
         }
     }
