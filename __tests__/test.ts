@@ -1,5 +1,12 @@
 import * as t from "transducers-js";
-import { chainFrom, transducerBuilder } from "../src/index";
+import {
+    chainFrom,
+    toAverage,
+    toMax,
+    toMin,
+    toSum,
+    transducerBuilder,
+} from "../src/index";
 
 describe("toArray()", () => {
     const input = ["a", "bb", "ccc"];
@@ -266,6 +273,104 @@ describe("first()", () => {
         const result = chainFrom(rangeIterator).map(x => 10 * x).first();
         expect(result).toEqual(10);
         expect(rangeIterator.next().value).toEqual(2);
+    });
+});
+
+describe("find()", () => {
+    const input = [1, 2, 3, 4, 5];
+
+    it("should return the first element matching the predicate", () => {
+        const result = chainFrom(input).find(x => x > 2);
+        expect(result).toEqual(3);
+    });
+
+    it("should return null if there are no matching elements", () => {
+        const result = chainFrom(input).map(x => x * 2).find(x => x % 2 === 1);
+        expect(result).toBeNull();
+    });
+
+    it("should terminate computation upon finding a match", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator)
+            .map(x => 10 * x)
+            .find(x => x === 20);
+        expect(result).toEqual(20);
+        expect(rangeIterator.next().value).toEqual(3);
+    });
+});
+
+describe("count()", () => {
+    it("should return the number of elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n < 3).count();
+        expect(result).toEqual(2);
+    });
+});
+
+describe("toSum()", () => {
+    it("should sum the elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).reduce(toSum());
+        expect(result).toEqual(15);
+    });
+});
+
+describe("toAverage()", () => {
+    it("should average the elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).reduce(toAverage());
+        expect(result).toEqual(3);
+    });
+});
+
+describe("toMin()", () => {
+    it("should take the min of numbers", () => {
+        const result = chainFrom([3, 4, 5, 1, 2]).reduce(toMin());
+        expect(result).toEqual(1);
+    });
+
+    it("should take the min of strings", () => {
+        const result = chainFrom(["c", "b", "a", "e", "d"]).reduce(toMin());
+        expect(result).toEqual("a");
+    });
+
+    it("should return null on no input", () => {
+        const result = chainFrom([]).reduce(toMin());
+        expect(result).toBeNull();
+    });
+
+    it("should use the comparator if provided", () => {
+        const result = chainFrom({ a: 2, b: 1, c: 3 }).reduce(
+            toMin(
+                (a: [string, number], b: [string, number]) =>
+                    a[1] < b[1] ? -1 : 1,
+            ),
+        );
+        expect(result).toEqual(["b", 1]);
+    });
+});
+
+describe("toMax()", () => {
+    it("should take the max of numbers", () => {
+        const result = chainFrom([3, 4, 5, 1, 2]).reduce(toMax());
+        expect(result).toEqual(5);
+    });
+
+    it("should take the max of strings", () => {
+        const result = chainFrom(["c", "b", "a", "e", "d"]).reduce(toMax());
+        expect(result).toEqual("e");
+    });
+
+    it("should return null on no input", () => {
+        const result = chainFrom([]).reduce(toMax());
+        expect(result).toBeNull();
+    });
+
+    it("should use the comparator if provided", () => {
+        const result = chainFrom({ a: 2, b: 1, c: 3 }).reduce(
+            toMax(
+                (a: [string, number], b: [string, number]) =>
+                    a[1] < b[1] ? -1 : 1,
+            ),
+        );
+        expect(result).toEqual(["c", 3]);
     });
 });
 

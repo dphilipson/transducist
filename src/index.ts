@@ -68,6 +68,8 @@ export interface TransformChain<T> {
     toIterator(): IterableIterator<T>;
     forEach(f: (item: T) => void): void;
     first(): T | null;
+    find(pred: (item: T) => boolean): T | null;
+    count(): number;
 }
 
 export interface TransducerBuilder<TBase, T> {
@@ -91,13 +93,15 @@ export interface TransducerBuilder<TBase, T> {
     build(): Transducer<TBase, T>;
 }
 
-// ----- Implementation begins -----
-
-// ----- Main chain class implementation -----
-
 export interface Dictionary<V> {
     [key: string]: V;
 }
+
+export type Comparator<T> = (a: T, b: T) => number;
+
+// ----- Implementation begins -----
+
+// ----- Main chain class implementation -----
 
 export function chainFrom<T>(collection: Iterable<T>): TransformChain<T>;
 export function chainFrom<V>(
@@ -137,70 +141,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         };
     }
 
-    public reduce<TResult>(
-        reducer: Reducer<TResult, T>,
-        initialValue: TResult,
-    ): TResult;
-    public reduce<TResult, TCompleteResult>(
-        transformer: CompletingTransformer<TResult, TCompleteResult, T>,
-        initialValue?: TResult,
-    ): TCompleteResult;
-    public reduce<TResult, TCompleteResult>(
-        transformer:
-            | Reducer<TResult, T>
-            | CompletingTransformer<TResult, TCompleteResult, T>,
-        initialValue: TResult,
-    ): TCompleteResult {
-        // Need to contort the type system a bit to get this overload.
-        if (typeof transformer === "function") {
-            const result: TResult = t.transduce<TResult, TBase, T>(
-                this.build(),
-                transformer,
-                initialValue,
-                this.collection,
-            );
-            // Safe because TResult and TCompleteResult are the same in this
-            // case.
-            return result as any;
-        } else {
-            if (initialValue === undefined) {
-                return t.transduce<TResult, TCompleteResult, TBase, T>(
-                    this.build(),
-                    transformer,
-                    this.collection,
-                );
-            } else {
-                return t.transduce<TResult, TCompleteResult, TBase, T>(
-                    this.build(),
-                    transformer,
-                    initialValue,
-                    this.collection,
-                );
-            }
-        }
-    }
-
-    public toArray(): T[] {
-        return t.into([], this.build(), this.collection);
-    }
-
-    public toIterator(): IterableIterator<T> {
-        const iterable: Iterator<T> = new TransducerIterable(
-            this.build(),
-            getIterator(this.collection),
-        );
-        // We can't satisfy the IterableIterator interface while functioning in
-        // environments without Symbol, hence the cast.
-        return iterable as any;
-    }
-
-    public forEach(f: (item: T) => void): void {
-        this.reduce(new ForEachTransformer(f));
-    }
-
-    public first(): T | null {
-        return this.reduce(firstTransformer<T>());
-    }
+    // ----- Composing transducers -----
 
     public map<U>(f: (item: T) => U): CombinedBuilder<TBase, U> {
         return this.compose(t.map(f));
@@ -256,6 +197,81 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
     public interpose(separator: T): CombinedBuilder<TBase, T> {
         return this.compose(interpose(separator));
+    }
+
+    // ----- Reductions -----
+
+    public reduce<TResult>(
+        reducer: Reducer<TResult, T>,
+        initialValue: TResult,
+    ): TResult;
+    public reduce<TResult, TCompleteResult>(
+        transformer: CompletingTransformer<TResult, TCompleteResult, T>,
+        initialValue?: TResult,
+    ): TCompleteResult;
+    public reduce<TResult, TCompleteResult>(
+        transformer:
+            | Reducer<TResult, T>
+            | CompletingTransformer<TResult, TCompleteResult, T>,
+        initialValue: TResult,
+    ): TCompleteResult {
+        // Need to contort the type system a bit to get this overload.
+        if (typeof transformer === "function") {
+            const result: TResult = t.transduce<TResult, TBase, T>(
+                this.build(),
+                transformer,
+                initialValue,
+                this.collection,
+            );
+            // Safe because TResult and TCompleteResult are the same in this
+            // case.
+            return result as any;
+        } else {
+            if (initialValue === undefined) {
+                return t.transduce<TResult, TCompleteResult, TBase, T>(
+                    this.build(),
+                    transformer,
+                    this.collection,
+                );
+            } else {
+                return t.transduce<TResult, TCompleteResult, TBase, T>(
+                    this.build(),
+                    transformer,
+                    initialValue,
+                    this.collection,
+                );
+            }
+        }
+    }
+
+    public toArray(): T[] {
+        return t.into([], this.build(), this.collection);
+    }
+
+    public forEach(f: (item: T) => void): void {
+        this.reduce(new ForEachTransformer(f));
+    }
+
+    public first(): T | null {
+        return this.reduce(new Find<T>(() => true));
+    }
+
+    public find(pred: (item: T) => boolean): T | null {
+        return this.reduce(new Find(pred));
+    }
+
+    public count(): number {
+        return this.reduce(COUNT_TRANSFORMER);
+    }
+
+    public toIterator(): IterableIterator<T> {
+        const iterable: Iterator<T> = new TransducerIterable(
+            this.build(),
+            getIterator(this.collection),
+        );
+        // We can't satisfy the IterableIterator interface while functioning in
+        // environments without Symbol, hence the cast.
+        return iterable as any;
     }
 }
 
@@ -401,14 +417,119 @@ class ForEachTransformer<T> implements Transformer<void, T> {
     }
 }
 
-const FIRST_TRANSFORMER: Transformer<any, any> = {
-    ["@@transducer/init"]: () => null,
-    ["@@transducer/result"]: (result: any) => result,
-    ["@@transducer/step"]: (_: any, input: any) => t.reduced(input),
+const COUNT_TRANSFORMER: Transformer<number, any> = {
+    ["@@transducer/init"]: () => 0,
+    ["@@transducer/result"]: (result: number) => result,
+    ["@@transducer/step"]: (result: number) => {
+        return result + 1;
+    },
 };
 
-function firstTransformer<T>(): Transformer<T | null, T> {
-    return FIRST_TRANSFORMER;
+class Find<T> implements Transformer<T | null, T> {
+    constructor(private readonly pred: (item: T) => boolean) {}
+
+    public ["@@transducer/init"]() {
+        return null;
+    }
+
+    public ["@@transducer/result"](result: T | null) {
+        return result;
+    }
+
+    public ["@@transducer/step"](result: T | null, input: T) {
+        if (this.pred(input)) {
+            return t.reduced(input);
+        } else {
+            return result;
+        }
+    }
+}
+
+const SUM_TRANSFORMER: Transformer<number, number> = {
+    ["@@transducer/init"]: () => 0,
+    ["@@transducer/result"]: (result: number) => result,
+    ["@@transducer/step"]: (result: number, input: number) => {
+        return result + input;
+    },
+};
+
+export function toSum(): Transformer<number, number> {
+    return SUM_TRANSFORMER;
+}
+
+const AVERAGE_TRANSFORMER: CompletingTransformer<
+    [number, number],
+    number,
+    number
+> = {
+    ["@@transducer/init"]: () => [0, 0],
+    ["@@transducer/result"]: (result: [number, number]) =>
+        result[0] / result[1],
+    ["@@transducer/step"]: (result: [number, number], input: number) => {
+        result[0] += input;
+        result[1]++;
+        return result;
+    },
+};
+
+export function toAverage(): CompletingTransformer<
+    [number, number],
+    number,
+    number
+> {
+    return AVERAGE_TRANSFORMER as any;
+}
+
+class Min<T> implements Transformer<T | null, T> {
+    constructor(private readonly comparator: Comparator<T>) {}
+
+    public ["@@transducer/init"]() {
+        return null;
+    }
+
+    public ["@@transducer/result"](result: T | null) {
+        return result;
+    }
+
+    public ["@@transducer/step"](result: T | null, input: T) {
+        return result === null || this.comparator(input, result) < 0
+            ? input
+            : result;
+    }
+}
+
+function invertComparator<T>(comparator: Comparator<T>): Comparator<T> {
+    return (a, b) => -comparator(a, b);
+}
+
+const NATURAL_COMPARATOR: Comparator<number> = (a: number, b: number) => {
+    if (a < b) {
+        return -1;
+    } else {
+        return a > b ? 1 : 0;
+    }
+};
+
+export function toMin<T extends number | string>(): Transformer<T | null, T> &
+    Transformer<T | null, T>;
+export function toMin<T>(
+    comparator: (a: T, b: T) => number,
+): Transformer<T | null, T>;
+export function toMin(
+    comparator: (a: any, b: any) => number = NATURAL_COMPARATOR,
+): Transformer<any, any> {
+    return new Min(comparator);
+}
+
+export function toMax<T extends number | string>(): Transformer<T | null, T> &
+    Transformer<T | null, T>;
+export function toMax<T>(
+    comparator: (a: T, b: T) => number,
+): Transformer<T | null, T>;
+export function toMax(
+    comparator: (a: any, b: any) => number = NATURAL_COMPARATOR,
+): Transformer<any, any> {
+    return new Min(invertComparator(comparator));
 }
 
 const TO_ARRAY_TRANSFORMER: Transformer<any[], any> = {
