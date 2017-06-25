@@ -554,6 +554,22 @@ export function toMax(
     return new Min(invertComparator(comparator));
 }
 
+const TO_OBJECT_TRANSFORMER: Transformer<Dictionary<any>, [string, any]> = {
+    ["@@transducer/init"]: () => ({}),
+    ["@@transducer/result"]: (result: Dictionary<any>) => result,
+    ["@@transducer/step"]: (
+        result: Dictionary<any>,
+        [key, value]: [string, any],
+    ) => {
+        result[key] = value;
+        return result;
+    },
+};
+
+export function toObject<T>(): Transformer<Dictionary<T>, [string, T]> {
+    return TO_OBJECT_TRANSFORMER;
+}
+
 const TO_ARRAY_TRANSFORMER: Transformer<any[], any> = {
     ["@@transducer/init"]: () => [],
     ["@@transducer/result"]: (result: any[]) => result,

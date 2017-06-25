@@ -4,6 +4,7 @@ import {
     toAverage,
     toMax,
     toMin,
+    toObject,
     toSum,
     transducerBuilder,
 } from "../src/index";
@@ -398,6 +399,15 @@ describe("toMax()", () => {
             ),
         );
         expect(result).toEqual(["c", 3]);
+    });
+});
+
+describe("toObject()", () => {
+    it("should build an object out of key-value pairs", () => {
+        const result = chainFrom(["a", "bb", "ccc"])
+            .map(s => [s, s.length])
+            .reduce(toObject<number>());
+        expect(result).toEqual({ a: 1, bb: 2, ccc: 3 });
     });
 });
 

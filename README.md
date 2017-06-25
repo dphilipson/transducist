@@ -454,6 +454,8 @@ chainFrom([1, 2, 3, 4, 5])
     .filter(n => n % 2 === 1)
     .stringJoin(" -> "); // -> "1 -> 3 -> 5"
 ```
+Not called `toString()` in order to avoid clashing with the `Object` prototype
+method.
 
 #### `toIterator()`
 
@@ -491,11 +493,16 @@ A handful of pre-made transformers are provided by this library to be used with
 ### Reducers
 
 These APIs provide objects which may be passed to `reduce()`, as described in
-the previous section, to provide additional options for completing chains. They
-are kept as separator transformer objects, rather than added as additional
-termination methods, to maintain type safety, as they only make sense if the
-elements at the end of the chain are of a certain type. Some discussion of this
-is in the [Goals](#goals) section above.
+the previous section, to provide additional options for completing chains whose
+elements are of specific types- for example, `toSum()` can only be used on a
+chain of numbers.
+
+They are kept as separate transformer objects, rather than added as additional
+termination methods, to maintain type safety, since methods on the chain can
+necessarily be called at any time. By contrast, passing one of these to
+`reduce()` on a chain of the incorrect type will be caught by TypeScript.
+
+Some discussion of this is in the [Goals](#goals) section above.
 
 #### `toSum()`
 
@@ -542,6 +549,18 @@ Example:
 chainFrom(["a", "bb", "ccc"])
     .map(s => s.length)
     .reduce(toMax()); // -> 3
+```
+
+### `toObject()`
+
+For a chain of two element arrays, creates an object whose keys are the first
+element of each array and whose values are the second. The first element of each
+pair must be a string. Further, a type parameter must be provided to specify the
+type of the values. For example:
+```ts
+chainFrom(["a", "bb", "ccc"])
+    .map(s => [s, s.length])
+    .reduce(toObject<number>()); // -> { a: 1, bb: 2, ccc: 3 }
 ```
 
 Copyright © 2017 David Philipson
