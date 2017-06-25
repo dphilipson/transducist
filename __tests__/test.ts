@@ -212,6 +212,11 @@ describe("reduce()", () => {
 });
 
 describe("toIterator()", () => {
+    it("should return an iterable whose @@iterator is itself", () => {
+        const iterator = chainFrom([1, 2, 3]).map(n => 2 * n).toIterator();
+        expect(iterator[Symbol.iterator]()).toBe(iterator);
+    });
+
     it("should return an iterator of the elements", () => {
         const iterator = chainFrom([1, 2, 3]).map(n => 2 * n).toIterator();
         const result = Array.from(iterator);
@@ -234,6 +239,12 @@ describe("toIterator()", () => {
             .toIterator();
         const result = Array.from(iterator);
         expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
+    });
+
+    it("should work when iterating strings", () => {
+        const iterator = chainFrom("hello").filter(c => c !== "l").toIterator();
+        const result = Array.from(iterator);
+        expect(result).toEqual(["h", "e", "o"]);
     });
 
     it("should work when iterating objects", () => {

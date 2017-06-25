@@ -39,7 +39,8 @@
       "ts",
       "tsx",
       "js"
-    ]
+    ],
+    "mapCoverage": true
   },
   "lint-staged": {
     "*.{ts,tsx}": [
