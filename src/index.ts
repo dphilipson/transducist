@@ -70,6 +70,7 @@ export interface TransformChain<T> {
     first(): T | null;
     find(pred: (item: T) => boolean): T | null;
     count(): number;
+    stringJoin(separator: string): string;
 }
 
 export interface TransducerBuilder<TBase, T> {
@@ -264,6 +265,10 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(COUNT_TRANSFORMER);
     }
 
+    public stringJoin(separator: string): string {
+        return this.reduce(new StringJoin(separator));
+    }
+
     public toIterator(): IterableIterator<T> {
         const iterable: Iterator<T> = new TransducerIterable(
             this.build(),
@@ -417,14 +422,6 @@ class ForEachTransformer<T> implements Transformer<void, T> {
     }
 }
 
-const COUNT_TRANSFORMER: Transformer<number, any> = {
-    ["@@transducer/init"]: () => 0,
-    ["@@transducer/result"]: (result: number) => result,
-    ["@@transducer/step"]: (result: number) => {
-        return result + 1;
-    },
-};
-
 class Find<T> implements Transformer<T | null, T> {
     constructor(private readonly pred: (item: T) => boolean) {}
 
@@ -442,6 +439,31 @@ class Find<T> implements Transformer<T | null, T> {
         } else {
             return result;
         }
+    }
+}
+
+const COUNT_TRANSFORMER: Transformer<number, any> = {
+    ["@@transducer/init"]: () => 0,
+    ["@@transducer/result"]: (result: number) => result,
+    ["@@transducer/step"]: (result: number) => {
+        return result + 1;
+    },
+};
+
+class StringJoin implements CompletingTransformer<any[], string, any> {
+    constructor(private readonly separator: string) {}
+
+    public ["@@transducer/init"]() {
+        return [];
+    }
+
+    public ["@@transducer/result"](result: any[]) {
+        return result.join(this.separator);
+    }
+
+    public ["@@transducer/step"](result: any[], input: any) {
+        result.push(input);
+        return result;
     }
 }
 

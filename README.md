@@ -445,6 +445,16 @@ chainFrom([1, 2, 3, 4, 5])
     .count(); // -> 3
 ```
 
+#### `stringJoin(separator)`
+
+Returns a string obtained by concatenating the elements together as strings with
+the separator between them. For example:
+```ts
+chainFrom([1, 2, 3, 4, 5])
+    .filter(n => n % 2 === 1)
+    .stringJoin(" -> "); // -> "1 -> 3 -> 5"
+```
+
 #### `toIterator()`
 
 Returns an iterator. Elements of the input iterator are not read until this

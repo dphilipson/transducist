@@ -310,6 +310,22 @@ describe("find()", () => {
     });
 });
 
+describe("stringJoin()", () => {
+    it("should concatenate the elements into a string with the separator", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 1)
+            .stringJoin(" -> ");
+        expect(result).toEqual("1 -> 3 -> 5");
+    });
+
+    it("should work if the separator is the empty string", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 1)
+            .stringJoin("");
+        expect(result).toEqual("135");
+    });
+});
+
 describe("count()", () => {
     it("should return the number of elements", () => {
         const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n < 3).count();
