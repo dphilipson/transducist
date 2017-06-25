@@ -12,7 +12,7 @@ const result = chainFrom(allProjects)
     .filter(project => project.language === "Haskell")
     .map(project => project.owner)
     .filter(owner => owner.name === "Brad")
-    .mapcat(owner => owner.children)
+    .flatMap(owner => owner.children)
     .take(100)
     .forEach(person => console.log(person));
 ```
@@ -271,10 +271,10 @@ chainFrom([{a: 1}, {a: 2}, {b: 3}])
     .toArray(); // -> [1, 2]
 ```
 
-#### `mapcat(f)`
+#### `flatMap(f)`
 
-Often called `flatMap`. For `f` a function which maps each element to an
-iterable, applies `f` to each element and concatenates the results. For example:
+For `f` a function which maps each element to an iterable, applies `f` to each
+element and concatenates the results. For example:
 ```ts
 const authors = [
     { name: "cbrontë", books: ["Jane Eyre", "Shirley"] },
@@ -498,9 +498,10 @@ elements are of specific types- for example, `toSum()` can only be used on a
 chain of numbers.
 
 They are kept as separate transformer objects, rather than added as additional
-termination methods, to maintain type safety, since methods on the chain can
-necessarily be called at any time. By contrast, passing one of these to
-`reduce()` on a chain of the incorrect type will be caught by TypeScript.
+termination methods, to maintain type safety, since methods on the chain can be
+regardless of the current type of its elements. By contrast, passing one of
+these reducers to `reduce()` on a chain of the incorrect type will be caught by
+TypeScript.
 
 Some discussion of this is in the [Goals](#goals) section above.
 

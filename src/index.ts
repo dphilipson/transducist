@@ -44,7 +44,7 @@ export interface TransformChain<T> {
     filter(pred: (item: T) => boolean): TransformChain<T>;
     remove(pred: (item: T) => boolean): TransformChain<T>;
     keep<U>(f: (item: T) => U | null | void): TransformChain<U>;
-    mapcat<U>(f: (item: T) => U[]): TransformChain<U>;
+    flatMap<U>(f: (item: T) => U[]): TransformChain<U>;
     dedupe(): TransformChain<T>;
     take(n: number): TransformChain<T>;
     takeWhile(pred: (item: T) => boolean): TransformChain<T>;
@@ -80,7 +80,7 @@ export interface TransducerBuilder<TBase, T> {
     filter(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
     remove(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
     keep<U>(f: (item: T) => U | null | void): TransducerBuilder<TBase, U>;
-    mapcat<U>(f: (item: T) => U[]): TransducerBuilder<TBase, U>;
+    flatMap<U>(f: (item: T) => U[]): TransducerBuilder<TBase, U>;
     dedupe(): TransducerBuilder<TBase, T>;
     take(n: number): TransducerBuilder<TBase, T>;
     takeWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
@@ -160,7 +160,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(keep(f));
     }
 
-    public mapcat<U>(f: (item: T) => U[]): CombinedBuilder<TBase, U> {
+    public flatMap<U>(f: (item: T) => U[]): CombinedBuilder<TBase, U> {
         return this.compose(t.mapcat(f));
     }
 

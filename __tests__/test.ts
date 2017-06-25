@@ -97,10 +97,10 @@ describe("keep()", () => {
     });
 });
 
-describe("mapcat()", () => {
+describe("flatMap()", () => {
     it("should map then concatenate elements", () => {
         const result = chainFrom(["a", "bb", "ccc"])
-            .mapcat(s => s.split(""))
+            .flatMap(s => s.split(""))
             .toArray();
         expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
     });
@@ -236,7 +236,7 @@ describe("toIterator()", () => {
         // This tests that the iterator works with transducers that produce
         // multiple outputs for one input.
         const iterator = chainFrom(["a", "bb", "ccc"])
-            .mapcat(s => s.split(""))
+            .flatMap(s => s.split(""))
             .toIterator();
         const result = Array.from(iterator);
         expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
