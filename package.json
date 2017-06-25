@@ -1,7 +1,7 @@
 {
   "name": "typescript-transducers",
   "version": "0.1.0",
-  "description": "Convenient TypeScript wrapper of transducers-js.",
+  "description": "Ergonomic TypeScript transducers for beginners and experts.",
   "main": "dist/index.js",
   "types": "dist/index",
   "files": [
@@ -20,7 +20,7 @@
   "license": "MIT",
   "scripts": {
     "build": "yarn run clean && tsc -p tsconfig.build.json",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf dist/*",
     "format": "yarn run format-glob -- \"'src/**/*.{ts,tsx}'\"",
     "format-glob": "prettier --tab-width 4 --trailing-comma all --write",
     "jest": "jest",
