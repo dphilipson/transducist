@@ -23,6 +23,7 @@
     "clean": "rm -rf dist/*",
     "format": "yarn run format-glob -- \"'src/**/*.{ts,tsx}'\"",
     "format-glob": "prettier --tab-width 4 --trailing-comma all --write",
+    "generate-toc": "markdown-toc -i README.md && markdown-toc -i docs/*.md",
     "jest": "jest",
     "jest-watch": "yarn run jest -- --watch",
     "lint": "tslint --project .",
@@ -47,6 +48,10 @@
       "format-glob",
       "yarn run lint -- --fix",
       "git add"
+    ],
+    "*.md": [
+      "yarn run generate-toc && true",
+      "git add"
     ]
   },
   "devDependencies": {
@@ -54,6 +59,7 @@
     "husky": "^0.13.4",
     "jest": "^20.0.4",
     "lint-staged": "^3.6.1",
+    "markdown-toc": "^1.1.0",
     "prettier": "^1.4.4",
     "ts-jest": "^20.0.6",
     "tslint": "^5.4.3",
