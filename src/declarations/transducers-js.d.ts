@@ -13,7 +13,7 @@ declare module "transducers-js" {
     export type Reducer<TResult, TInput> = (
         result: TResult,
         input: TInput,
-    ) => TResult;
+    ) => TResult | Reduced<TResult>;
 
     export type Transducer<TInput, TOutput> = <TResult, TCompleteResult>(
         xf: CompletingTransformer<TResult, TCompleteResult, TOutput>,

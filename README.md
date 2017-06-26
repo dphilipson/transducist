@@ -175,6 +175,44 @@ const result = chainFrom([[1, 2], [3, 4, 5], [6]])
     .map(x => 10 * x)
     .toArray(); // -> [30, 40, 50, 60];
 ```
+As an example of implementing a custom transducer, suppose we want to implement
+a "replace" operation, in which we provide two values and all instances of the
+first value are replaced by the second one. We can do so as follows:
+```ts
+import {
+    CompletingTransformer,
+    Transducer,
+    Transformer,
+ } from "typescript-transducers";
+
+function replace<T>(initial: T, replacement: T): Transducer<T, T> {
+    return (xf: CompletingTransformer<T, any, T>) => ({
+        ["@@transducer/init"]: () => xf["@@transducer/init"](),
+        ["@@transducer/result"]: (result: T) => xf["@@transducer/result"](result),
+        ["@@transducer/step"]: (result: T, input: T) => {
+            const output = input === initial ? replacement : input;
+            return xf["@@transducer/step"](result, output);
+        },
+    });
+}
+```
+We could then use it as
+```ts
+const result = chainFrom([1, 2, 3, 4, 5])
+    .compose(replace(3, 1000))
+    .toArray(); // -> [1, 2, 1000, 4, 5]
+```
+If you find yourself doing this a lot, you may want to check out the utility
+function `makeTransducer()` to reduce boilerplate, which would allow the above
+to be written as
+```ts
+function replace<T>(initial: T, replacement: T) {
+    return makeTransducer((reducer, result, input) => {
+        const output = intput === initial ? replacement : input;
+        return reducer(result, output);
+    });
+}
+```
 All of this libary's transformation methods are implemented internally with
 calls to `.compose()`.
 

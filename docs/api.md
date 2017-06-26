@@ -39,6 +39,9 @@
   * [`toMin(comparator?)`](#tomincomparator)
   * [`toMax(comparator?)`](#tomaxcomparator)
   * [`toObject()`](#toobject)
+- [Utility functions](#utility-functions)
+  * [`makeTransducer(f: (reducer, result, input) => result)`](#maketransducerf-reducer-result-input--result)
+  * [`reduced(result)`](#reducedresult)
 
 <!-- tocstop -->
 
@@ -407,5 +410,59 @@ chainFrom(["a", "bb", "ccc"])
     .map(s => [s, s.length])
     .reduce(toObject<number>()); // -> { a: 1, bb: 2, ccc: 3 }
 ```
+
+## Utility functions
+
+### `makeTransducer(f: (reducer, result, input) => result)`
+
+Convenience function for defining new transducers. Given a function which takes
+a reducer and returns another reducer, return a transducer.
+
+The full definition of a transducer is a function from transformer to
+transformer, but most transducers can more easily be thought of as a function
+from reducer to reducer instead. This helper allows transducers to be defined in
+terms of such a function, removing the boilerplate of defining
+`@@transducer/init`, etc. methods on a transformer.
+
+Note that the signature `reducer => reducer` expands to `reducer => (result,
+input) => result`, which after uncurrying becomes `(reducer, result, input) =>
+result`, the actual type in the signature of this function.
+
+An example is given in the [Advanced
+Usage](https://github.com/dphilipson/typescript-transducers#using-custom-transducers)
+section of the readme, where
+```ts
+function replace<T>(initial: T, replacement: T) {
+    return makeTransducer((reducer, result, input) => {
+        const output = intput === initial ? replacement : input;
+        return reducer(result, output);
+    });
+}
+```
+is equivalent to
+```ts
+import {
+    CompletingTransformer,
+    Transducer,
+    Transformer,
+ } from "typescript-transducers";
+
+function replace<T>(initial: T, replacement: T): Transducer<T, T> {
+    return (xf: CompletingTransformer<T, any, T>) => ({
+        ["@@transducer/init"]: () => xf["@@transducer/init"](),
+        ["@@transducer/result"]: (result: T) => xf["@@transducer/result"](result),
+        ["@@transducer/step"]: (result: T, input: T) => {
+            const output = input === initial ? replacement : input;
+            return xf["@@transducer/step"](result, output);
+        },
+    });
+}
+```
+
+### `reduced(result)`
+
+Returns a reduced value of `result`, as described by the [transducer
+protocol](https://github.com/cognitect-labs/transducers-js#reduced). Can be
+returned by a reducer or a transformer to short-circuit computation.
 
 Copyright © 2017 David Philipson

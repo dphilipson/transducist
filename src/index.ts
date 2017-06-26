@@ -11,10 +11,14 @@ export interface Reduced<TResult> {
     ["@@transducer/value"]: TResult;
 }
 
-export type Reducer<TResult, TInput> = (
+/**
+ * Reducers are allowed to indicate that no further computation is needed by
+ * returning a Reduced result.
+ */
+export type QuittingReducer<TResult, TInput> = (
     result: TResult,
     input: TInput,
-) => TResult;
+) => TResult | Reduced<TResult>;
 
 export type Transducer<TInput, TOutput> = <TResult, TCompleteResult>(
     xf: CompletingTransformer<TResult, TCompleteResult, TOutput>,
@@ -56,7 +60,7 @@ export interface TransformChain<T> {
     takeWhile(pred: (item: T) => boolean): TransformChain<T>;
 
     reduce<TResult>(
-        reducer: Reducer<TResult, T>,
+        reducer: QuittingReducer<TResult, T>,
         initialValue: TResult,
     ): TResult;
     reduce<TResult, TCompleteResult>(
@@ -205,7 +209,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     // ----- Reductions -----
 
     public reduce<TResult>(
-        reducer: Reducer<TResult, T>,
+        reducer: QuittingReducer<TResult, T>,
         initialValue: TResult,
     ): TResult;
     public reduce<TResult, TCompleteResult>(
@@ -214,7 +218,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     ): TCompleteResult;
     public reduce<TResult, TCompleteResult>(
         transformer:
-            | Reducer<TResult, T>
+            | QuittingReducer<TResult, T>
             | CompletingTransformer<TResult, TCompleteResult, T>,
         initialValue: TResult,
     ): TCompleteResult {
@@ -286,12 +290,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 }
 
-// ----- Custom transducers -----
-
-type QuittingReducer<TResult, TInput> = (
-    result: TResult,
-    input: TInput,
-) => TResult | t.Reduced<TResult>;
+// ----- Utility functions -----
 
 class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
     implements CompletingTransformer<TResult, TCompleteResult, TInput> {
@@ -336,7 +335,7 @@ class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
  *
  *   ((reducer, result, input) -> newResult).
  */
-function makeTransducer<T, U>(
+export function makeTransducer<T, U>(
     f: <R>(
         reducer: QuittingReducer<R, U>,
         result: R,
@@ -350,6 +349,12 @@ function makeTransducer<T, U>(
                 f(reducer, result, input),
         );
 }
+
+export function reduced<T>(result: T): Reduced<T> {
+    return t.reduced(result);
+}
+
+// ----- Custom transducers -----
 
 function dedupe<T>(): Transducer<T, T> {
     let last: T | {} = {};
