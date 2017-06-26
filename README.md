@@ -234,59 +234,6 @@ transducer.
 Any number of these methods may be called on a chain to add transformations in
 sequence.
 
-#### `map(f)`
-
-Transforms each element by applying `f` to it. For example:
-```ts
-chainFrom([1, 2, 3])
-    .map(x => x * 2)
-    .toArray(); // -> [2, 4, 6]
-```
-
-#### `filter(pred)`
-
-Keeps only the elements matching the predicate `pred`. For example:
-```ts
-chainFrom([1, 2, 3, 4])
-    .map(x => x % 2 === 1)
-    .toArray(); // -> [1, 3]
-```
-
-#### `remove(pred)`
-
-Like `filter()`, but removes the elements matching `pred` instead. For example:
-```ts
-chainFrom([1, 2, 3])
-    .remove(x => x % 2 === 1)
-    .toArray(); // -> [2, 4]
-```
-
-#### `keep(f)`
-
-Transforms each element by applying `f` to it, but drops any elements for which
-`f` returns `null` or `undefined` (but not other falsy values). For example:
-```ts
-chainFrom([{a: 1}, {a: 2}, {b: 3}])
-    .keep(o => o.a)
-    .toArray(); // -> [1, 2]
-```
-
-#### `flatMap(f)`
-
-For `f` a function which maps each element to an iterable, applies `f` to each
-element and concatenates the results. For example:
-```ts
-const authors = [
-    { name: "cbrontë", books: ["Jane Eyre", "Shirley"] },
-    { name: "mshelley", books: ["Frankenstein"] },
-]
-
-chainFrom(authors)
-    .mapcat(author => author.books)
-    .toArray();
-// -> ["Jane Eyre", "Shirley", "Frankenstein"]
-```
-
 #### `dedupe()`
 
 Removes elements that are equal to the proceeding element according to an `===`
@@ -295,38 +242,6 @@ check. For example:
 chainFrom([1, 2, 2, 3, 3, 3])
     .dedupe()
     .toArray(); // -> [1, 2, 3]
-```
-
-#### `take(n)`
-
-Takes the first `n` elements and drops the rest. An essential opperation for
-efficiency, because it stops computations from occurring on more elements of the
-input than needed to produce `n` results. For example:
-```ts
-chainFrom([1, 2, 3, 4, 5])
-    .take(3)
-    .toArray(); // -> [1, 2, 3]
-```
-
-#### `takeWhile(pred)`
-
-Takes elements as long as the predicate `pred` holds, then drops the rest. Like
-`take()`, stops unnecessary computations on elements after `pred` fails. For
-example:
-```ts
-chainFrom([1, 2, 3, 4, 5])
-    .takeWhile(n => n < 3)
-    .toArray(); // -> [1, 2]
-```
-
-#### `takeNth(n)`
-
-Takes every `n`th element, starting from the first one. In other words, it takes
-the elements whose indices are multiples of `n`. For example:
-```ts
-chainFrom([1, 2, 3, 4, 5, 6])
-    .takeNth(2)
-    .toArray(); // [1, 3, 5]
 ```
 
 #### `drop(n)`
@@ -345,6 +260,60 @@ Skips elements as long as the predicate `pred` holds. For example:
 chainFrom([1, 2, 3, 4, 5])
     .dropWhile(n => n < 3)
     .toArray(); // -> [3, 4, 5]
+```
+
+#### `filter(pred)`
+
+Keeps only the elements matching the predicate `pred`. For example:
+```ts
+chainFrom([1, 2, 3, 4])
+    .map(x => x % 2 === 1)
+    .toArray(); // -> [1, 3]
+```
+
+#### `flatMap(f)`
+
+For `f` a function which maps each element to an iterable, applies `f` to each
+element and concatenates the results. For example:
+```ts
+const authors = [
+    { name: "cbrontë", books: ["Jane Eyre", "Shirley"] },
+    { name: "mshelley", books: ["Frankenstein"] },
+]
+
+chainFrom(authors)
+    .mapcat(author => author.books)
+    .toArray();
+// -> ["Jane Eyre", "Shirley", "Frankenstein"]
+```
+
+#### `interpose(separator)`
+
+Inserts `separator` between each pair of elements. For example:
+```ts
+chainFrom([1, 2, 3, 4, 5])
+    .interpose(0)
+    .toArray();
+// -> [1, 0, 2, 0, 3, 0, 4, 0, 5]
+```
+
+#### `keep(f)`
+
+Transforms each element by applying `f` to it, but drops any elements for which
+`f` returns `null` or `undefined` (but not other falsy values). For example:
+```ts
+chainFrom([{a: 1}, {a: 2}, {b: 3}])
+    .keep(o => o.a)
+    .toArray(); // -> [1, 2]
+```
+
+#### `map(f)`
+
+Transforms each element by applying `f` to it. For example:
+```ts
+chainFrom([1, 2, 3])
+    .map(x => x * 2)
+    .toArray(); // -> [2, 4, 6]
 ```
 
 #### `partitionAll(n)`
@@ -370,14 +339,45 @@ chainFrom(["a", "ab", "bc", "c", "cd", "cde"])
 // -> [["a", "ab"], ["bc"], ["c", "cd", "cde"]]
 ```
 
-#### `interpose(separator)`
+#### `remove(pred)`
 
-Inserts `separator` between each pair of elements. For example:
+Like `filter()`, but removes the elements matching `pred` instead. For example:
+```ts
+chainFrom([1, 2, 3])
+    .remove(x => x % 2 === 1)
+    .toArray(); // -> [2, 4]
+```
+
+#### `take(n)`
+
+Takes the first `n` elements and drops the rest. An essential opperation for
+efficiency, because it stops computations from occurring on more elements of the
+input than needed to produce `n` results. For example:
 ```ts
 chainFrom([1, 2, 3, 4, 5])
-    .interpose(0)
-    .toArray();
-// -> [1, 0, 2, 0, 3, 0, 4, 0, 5]
+    .take(3)
+    .toArray(); // -> [1, 2, 3]
+```
+
+#### `takeNth(n)`
+
+Takes every `n`th element, starting from the first one. In other words, it takes
+the elements whose indices are multiples of `n`. For example:
+```ts
+chainFrom([1, 2, 3, 4, 5, 6])
+    .takeNth(2)
+    .toArray(); // [1, 3, 5]
+```
+
+#### `takeWhile(pred)`
+
+Takes elements as long as the predicate `pred` holds, then drops the rest. Like
+`take()`, stops unnecessary computations on elements after `pred` fails. For
+example:
+```ts
+chainFrom([1, 2, 3, 4, 5])
+    .takeWhile(n => n < 3)
+    .toArray(); // -> [1, 2]
 ```
 
 #### `compose(transducer)`
@@ -395,32 +395,13 @@ library internally to implement all the others. For example usage, see the
 The following methods terminate a chain started with `chainFrom`, performing the
 calculations and producing a result.
 
-#### `toArray()`
+#### `count()`
 
-Returns an array of the results. See any of the above examples.
-
-#### `forEach(f)`
-
-Calls `f` on each element of the result, presumably for side-effects. For
-example:
+Returns the number of elements. For example:
 ```ts
 chainFrom([1, 2, 3, 4, 5])
-    .map(x => x * 10)
-    .forEach(x => console.log(x));
-// Prints 10, 20, 30, 40, 50
-```
-
-#### `first()`
-
-Returns the first element of the result, or `null` if there are no other
-elements. Short-circuits computation, so no more work is done than necessary to
-get the first element.
-
-Example:
-```ts
-chainFrom([1, 2, 3, 4, 5])
-    .map(x => x * 10)
-    .first(); // -> 10
+    .filter(x => x % 2 === 1)
+    .count(); // -> 3
 ```
 
 #### `find(pred)`
@@ -436,13 +417,41 @@ chainFrom([1, 2, 3, 4, 5])
     .find(x => x % 6 === 0); // -> 30
 ```
 
-#### `count()`
+#### `first()`
 
-Returns the number of elements. For example:
+Returns the first element of the result, or `null` if there are no other
+elements. Short-circuits computation, so no more work is done than necessary to
+get the first element.
+
+Example:
 ```ts
 chainFrom([1, 2, 3, 4, 5])
-    .filter(x => x % 2 === 1)
-    .count(); // -> 3
+    .map(x => x * 10)
+    .first(); // -> 10
+```
+
+#### `forEach(f)`
+
+Calls `f` on each element of the result, presumably for side-effects. For
+example:
+```ts
+chainFrom([1, 2, 3, 4, 5])
+    .map(x => x * 10)
+    .forEach(x => console.log(x));
+// Prints 10, 20, 30, 40, 50
+```
+
+#### `isEmpty()`
+
+Returns `true` if there are any elements, else `false`. For example:
+```ts
+chainFrom([1, 2, 3, 4, 5])
+    .filter(n => n > 10)
+    .isEmpty(); // -> true
+
+chainFrom([1, 2, 3, 4, 5])
+    .filter(n => n % 2 === 0)
+    .isEmpty(); // -> false
 ```
 
 #### `stringJoin(separator)`
@@ -456,6 +465,10 @@ chainFrom([1, 2, 3, 4, 5])
 ```
 Not called `toString()` in order to avoid clashing with the `Object` prototype
 method.
+
+#### `toArray()`
+
+Returns an array of the results. See any of the above examples.
 
 #### `toIterator()`
 

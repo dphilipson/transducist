@@ -54,92 +54,10 @@ describe("compose()", () => {
     });
 });
 
-describe("map()", () => {
-    it("should map over elements", () => {
-        const result = chainFrom(["a", "bb", "ccc"])
-            .map(s => s.length)
-            .toArray();
-        expect(result).toEqual([1, 2, 3]);
-    });
-});
-
-describe("filter()", () => {
-    it("should remove elements not matching the filter", () => {
-        const result = chainFrom([1, 2, 3, 4, 5])
-            .filter(n => n % 2 === 0)
-            .toArray();
-        expect(result).toEqual([2, 4]);
-    });
-});
-
-describe("remove()", () => {
-    it("should remove elements matching the filter", () => {
-        const result = chainFrom([1, 2, 3, 4, 5])
-            .remove(n => n % 2 === 0)
-            .toArray();
-        expect(result).toEqual([1, 3, 5]);
-    });
-});
-
-describe("keep()", () => {
-    it("should map elements and keep non-nulls", () => {
-        const map: { [key: string]: boolean | null | undefined } = {
-            a: true,
-            b: null,
-            c: true,
-            d: undefined,
-            e: false,
-        };
-        const result = chainFrom(["a", "b", "c", "d", "e"])
-            .keep(s => map[s])
-            .toArray();
-        expect(result).toEqual([true, true, false]);
-    });
-});
-
-describe("flatMap()", () => {
-    it("should map then concatenate elements", () => {
-        const result = chainFrom(["a", "bb", "ccc"])
-            .flatMap(s => s.split(""))
-            .toArray();
-        expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
-    });
-});
-
 describe("dedupe()", () => {
     it("should remove consecutive duplicates", () => {
         const result = chainFrom([1, 2, 2, 3, 3, 3]).dedupe().toArray();
         expect(result).toEqual([1, 2, 3]);
-    });
-});
-
-describe("take()", () => {
-    it("should take the first n elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).take(3).toArray();
-        expect(result).toEqual([1, 2, 3]);
-    });
-
-    it("should terminate after pulling n elements", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator).take(2).toArray();
-        expect(result).toEqual([1, 2]);
-        expect(rangeIterator.next().value).toEqual(3);
-    });
-});
-
-describe("takeWhile()", () => {
-    it("should take elements until the predicate fails", () => {
-        const result = chainFrom([1, 2, 3, 4, 5])
-            .takeWhile(n => n < 3)
-            .toArray();
-        expect(result).toEqual([1, 2]);
-    });
-});
-
-describe("takeNth()", () => {
-    it("should take every nth element", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).takeNth(2).toArray();
-        expect(result).toEqual([1, 3, 5]);
     });
 });
 
@@ -159,6 +77,56 @@ describe("dropWhile()", () => {
     });
 });
 
+describe("filter()", () => {
+    it("should remove elements not matching the filter", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 0)
+            .toArray();
+        expect(result).toEqual([2, 4]);
+    });
+});
+
+describe("flatMap()", () => {
+    it("should map then concatenate elements", () => {
+        const result = chainFrom(["a", "bb", "ccc"])
+            .flatMap(s => s.split(""))
+            .toArray();
+        expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
+    });
+});
+
+describe("interpose()", () => {
+    it("should insert the separator between elements", () => {
+        const result = chainFrom([1, 2, 3]).interpose(0).toArray();
+        expect(result).toEqual([1, 0, 2, 0, 3]);
+    });
+});
+
+describe("keep()", () => {
+    it("should map elements and keep non-nulls", () => {
+        const map: { [key: string]: boolean | null | undefined } = {
+            a: true,
+            b: null,
+            c: true,
+            d: undefined,
+            e: false,
+        };
+        const result = chainFrom(["a", "b", "c", "d", "e"])
+            .keep(s => map[s])
+            .toArray();
+        expect(result).toEqual([true, true, false]);
+    });
+});
+
+describe("map()", () => {
+    it("should map over elements", () => {
+        const result = chainFrom(["a", "bb", "ccc"])
+            .map(s => s.length)
+            .toArray();
+        expect(result).toEqual([1, 2, 3]);
+    });
+});
+
 describe("partitionAll()", () => {
     it("should group elements by the specified size", () => {
         const result = chainFrom([1, 2, 3, 4, 5]).partitionAll(2).toArray();
@@ -175,10 +143,42 @@ describe("partitionBy()", () => {
     });
 });
 
-describe("interpose()", () => {
-    it("should insert the separator between elements", () => {
-        const result = chainFrom([1, 2, 3]).interpose(0).toArray();
-        expect(result).toEqual([1, 0, 2, 0, 3]);
+describe("remove()", () => {
+    it("should remove elements matching the filter", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .remove(n => n % 2 === 0)
+            .toArray();
+        expect(result).toEqual([1, 3, 5]);
+    });
+});
+
+describe("take()", () => {
+    it("should take the first n elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).take(3).toArray();
+        expect(result).toEqual([1, 2, 3]);
+    });
+
+    it("should terminate after pulling n elements", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator).take(2).toArray();
+        expect(result).toEqual([1, 2]);
+        expect(rangeIterator.next().value).toEqual(3);
+    });
+});
+
+describe("takeNth()", () => {
+    it("should take every nth element", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).takeNth(2).toArray();
+        expect(result).toEqual([1, 3, 5]);
+    });
+});
+
+describe("takeWhile()", () => {
+    it("should take elements until the predicate fails", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .takeWhile(n => n < 3)
+            .toArray();
+        expect(result).toEqual([1, 2]);
     });
 });
 
@@ -331,6 +331,20 @@ describe("count()", () => {
     it("should return the number of elements", () => {
         const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n < 3).count();
         expect(result).toEqual(2);
+    });
+});
+
+describe("isEmpty()", () => {
+    it("should return true if there are no elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n > 10).isEmpty();
+        expect(result).toEqual(true);
+    });
+
+    it("should return false if there are any elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 0)
+            .isEmpty();
+        expect(result).toEqual(false);
     });
 });
 

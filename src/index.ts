@@ -40,20 +40,20 @@ export type Transformer<TResult, TInput> = CompletingTransformer<
 export interface TransformChain<T> {
     compose<U>(transducer: Transducer<T, U>): TransformChain<U>;
 
-    map<U>(f: (item: T) => U): TransformChain<U>;
-    filter(pred: (item: T) => boolean): TransformChain<T>;
-    remove(pred: (item: T) => boolean): TransformChain<T>;
-    keep<U>(f: (item: T) => U | null | void): TransformChain<U>;
-    flatMap<U>(f: (item: T) => U[]): TransformChain<U>;
     dedupe(): TransformChain<T>;
-    take(n: number): TransformChain<T>;
-    takeWhile(pred: (item: T) => boolean): TransformChain<T>;
-    takeNth(n: number): TransformChain<T>;
     drop(n: number): TransformChain<T>;
     dropWhile(pred: (item: T) => boolean): TransformChain<T>;
+    filter(pred: (item: T) => boolean): TransformChain<T>;
+    flatMap<U>(f: (item: T) => U[]): TransformChain<U>;
+    interpose(separator: T): TransformChain<T>;
+    keep<U>(f: (item: T) => U | null | void): TransformChain<U>;
+    map<U>(f: (item: T) => U): TransformChain<U>;
     partitionAll(n: number): TransformChain<T[]>;
     partitionBy(pred: (item: T) => any): TransformChain<T[]>;
-    interpose(separator: T): TransformChain<T>;
+    remove(pred: (item: T) => boolean): TransformChain<T>;
+    take(n: number): TransformChain<T>;
+    takeNth(n: number): TransformChain<T>;
+    takeWhile(pred: (item: T) => boolean): TransformChain<T>;
 
     reduce<TResult>(
         reducer: Reducer<TResult, T>,
@@ -64,32 +64,33 @@ export interface TransformChain<T> {
         initialValue?: TResult,
     ): TCompleteResult;
 
+    count(): number;
+    find(pred: (item: T) => boolean): T | null;
+    first(): T | null;
+    forEach(f: (item: T) => void): void;
+    isEmpty(): boolean;
+    stringJoin(separator: string): string;
     toArray(): T[];
     toIterator(): IterableIterator<T>;
-    forEach(f: (item: T) => void): void;
-    first(): T | null;
-    find(pred: (item: T) => boolean): T | null;
-    count(): number;
-    stringJoin(separator: string): string;
 }
 
 export interface TransducerBuilder<TBase, T> {
     compose<U>(transducer: Transducer<T, U>): TransducerBuilder<TBase, U>;
 
-    map<U>(f: (item: T) => U): TransducerBuilder<TBase, U>;
-    filter(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
-    remove(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
-    keep<U>(f: (item: T) => U | null | void): TransducerBuilder<TBase, U>;
-    flatMap<U>(f: (item: T) => U[]): TransducerBuilder<TBase, U>;
     dedupe(): TransducerBuilder<TBase, T>;
-    take(n: number): TransducerBuilder<TBase, T>;
-    takeWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
-    takeNth(n: number): TransducerBuilder<TBase, T>;
     drop(n: number): TransducerBuilder<TBase, T>;
     dropWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
+    filter(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
+    flatMap<U>(f: (item: T) => U[]): TransducerBuilder<TBase, U>;
+    interpose(separator: T): TransducerBuilder<TBase, T>;
+    keep<U>(f: (item: T) => U | null | void): TransducerBuilder<TBase, U>;
+    map<U>(f: (item: T) => U): TransducerBuilder<TBase, U>;
     partitionAll(n: number): TransducerBuilder<TBase, T[]>;
     partitionBy(pred: (item: T) => boolean): TransducerBuilder<TBase, T[]>;
-    interpose(separator: T): TransducerBuilder<TBase, T>;
+    remove(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
+    take(n: number): TransducerBuilder<TBase, T>;
+    takeNth(n: number): TransducerBuilder<TBase, T>;
+    takeWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
 
     build(): Transducer<TBase, T>;
 }
@@ -144,40 +145,8 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
     // ----- Composing transducers -----
 
-    public map<U>(f: (item: T) => U): CombinedBuilder<TBase, U> {
-        return this.compose(t.map(f));
-    }
-
-    public filter(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
-        return this.compose(t.filter(pred));
-    }
-
-    public remove(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
-        return this.compose(t.remove(pred));
-    }
-
-    public keep<U>(f: (item: T) => U | null | void): CombinedBuilder<TBase, U> {
-        return this.compose(keep(f));
-    }
-
-    public flatMap<U>(f: (item: T) => U[]): CombinedBuilder<TBase, U> {
-        return this.compose(t.mapcat(f));
-    }
-
     public dedupe(): CombinedBuilder<TBase, T> {
         return this.compose(dedupe<T>());
-    }
-
-    public take(n: number): CombinedBuilder<TBase, T> {
-        return this.compose(take<T>(n));
-    }
-
-    public takeWhile(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
-        return this.compose(t.takeWhile(pred));
-    }
-
-    public takeNth(n: number): CombinedBuilder<TBase, T> {
-        return this.compose(t.takeNth<T>(n));
     }
 
     public drop(n: number): CombinedBuilder<TBase, T> {
@@ -188,6 +157,26 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(t.dropWhile(pred));
     }
 
+    public filter(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
+        return this.compose(t.filter(pred));
+    }
+
+    public flatMap<U>(f: (item: T) => U[]): CombinedBuilder<TBase, U> {
+        return this.compose(t.mapcat(f));
+    }
+
+    public interpose(separator: T): CombinedBuilder<TBase, T> {
+        return this.compose(interpose(separator));
+    }
+
+    public keep<U>(f: (item: T) => U | null | void): CombinedBuilder<TBase, U> {
+        return this.compose(keep(f));
+    }
+
+    public map<U>(f: (item: T) => U): CombinedBuilder<TBase, U> {
+        return this.compose(t.map(f));
+    }
+
     public partitionAll(n: number): CombinedBuilder<TBase, T[]> {
         return this.compose(t.partitionAll<T>(n));
     }
@@ -196,8 +185,20 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(t.partitionBy(pred));
     }
 
-    public interpose(separator: T): CombinedBuilder<TBase, T> {
-        return this.compose(interpose(separator));
+    public remove(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
+        return this.compose(t.remove(pred));
+    }
+
+    public take(n: number): CombinedBuilder<TBase, T> {
+        return this.compose(take<T>(n));
+    }
+
+    public takeNth(n: number): CombinedBuilder<TBase, T> {
+        return this.compose(t.takeNth<T>(n));
+    }
+
+    public takeWhile(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
+        return this.compose(t.takeWhile(pred));
     }
 
     // ----- Reductions -----
@@ -245,28 +246,32 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         }
     }
 
-    public toArray(): T[] {
-        return t.into([], this.build(), this.collection);
-    }
-
-    public forEach(f: (item: T) => void): void {
-        this.reduce(new ForEachTransformer(f));
-    }
-
-    public first(): T | null {
-        return this.reduce(new Find<T>(() => true));
+    public count(): number {
+        return this.reduce(COUNT_TRANSFORMER);
     }
 
     public find(pred: (item: T) => boolean): T | null {
         return this.reduce(new Find(pred));
     }
 
-    public count(): number {
-        return this.reduce(COUNT_TRANSFORMER);
+    public first(): T | null {
+        return this.reduce(new Find<T>(() => true));
+    }
+
+    public forEach(f: (item: T) => void): void {
+        this.reduce(new ForEachTransformer(f));
+    }
+
+    public isEmpty(): boolean {
+        return this.reduce(IS_EMPTY_TRANFORMER);
     }
 
     public stringJoin(separator: string): string {
         return this.reduce(new StringJoin(separator));
+    }
+
+    public toArray(): T[] {
+        return t.into([], this.build(), this.collection);
     }
 
     public toIterator(): IterableIterator<T> {
@@ -345,15 +350,6 @@ function makeTransducer<T, U>(
         );
 }
 
-function keep<T, U>(f: (item: T) => U | null | void): Transducer<T, U> {
-    return makeTransducer(<
-        R
-    >(reducer: QuittingReducer<R, U>, result: R, input: T) => {
-        const output = f(input);
-        return output == null ? result : reducer(result, output);
-    });
-}
-
 function dedupe<T>(): Transducer<T, T> {
     let last: T | {} = {};
     return makeTransducer(<
@@ -364,23 +360,6 @@ function dedupe<T>(): Transducer<T, T> {
             return reducer(result, input);
         } else {
             return result;
-        }
-    });
-}
-
-// Don't use take() from transducers-js because it reads one more element than
-// necessary.
-function take<T>(n: number): Transducer<T, T> {
-    let i = 0;
-    return makeTransducer(<
-        R
-    >(reducer: QuittingReducer<R, T>, result: R, input: T) => {
-        if (i < n) {
-            i++;
-            const output = reducer(result, input);
-            return i === n ? t.reduced(output) : output;
-        } else {
-            return t.reduced(result);
         }
     });
 }
@@ -404,23 +383,39 @@ function interpose<T>(separator: T): Transducer<T, T> {
     });
 }
 
+function keep<T, U>(f: (item: T) => U | null | void): Transducer<T, U> {
+    return makeTransducer(<
+        R
+    >(reducer: QuittingReducer<R, U>, result: R, input: T) => {
+        const output = f(input);
+        return output == null ? result : reducer(result, output);
+    });
+}
+
+// Don't use take() from transducers-js because it reads one more element than
+// necessary.
+function take<T>(n: number): Transducer<T, T> {
+    let i = 0;
+    return makeTransducer(<
+        R
+    >(reducer: QuittingReducer<R, T>, result: R, input: T) => {
+        if (i < n) {
+            i++;
+            const output = reducer(result, input);
+            return i === n ? t.reduced(output) : output;
+        } else {
+            return t.reduced(result);
+        }
+    });
+}
+
 // ----- Custom transformers -----
 
-class ForEachTransformer<T> implements Transformer<void, T> {
-    constructor(private readonly f: (input: T) => void) {}
-
-    public ["@@transducer/init"]() {
-        return undefined;
-    }
-
-    public ["@@transducer/result"]() {
-        return undefined;
-    }
-
-    public ["@@transducer/step"](_: void, input: T) {
-        return this.f(input);
-    }
-}
+const COUNT_TRANSFORMER: Transformer<number, any> = {
+    ["@@transducer/init"]: () => 0,
+    ["@@transducer/result"]: (result: number) => result,
+    ["@@transducer/step"]: (result: number) => result + 1,
+};
 
 class Find<T> implements Transformer<T | null, T> {
     constructor(private readonly pred: (item: T) => boolean) {}
@@ -442,12 +437,26 @@ class Find<T> implements Transformer<T | null, T> {
     }
 }
 
-const COUNT_TRANSFORMER: Transformer<number, any> = {
-    ["@@transducer/init"]: () => 0,
-    ["@@transducer/result"]: (result: number) => result,
-    ["@@transducer/step"]: (result: number) => {
-        return result + 1;
-    },
+class ForEachTransformer<T> implements Transformer<void, T> {
+    constructor(private readonly f: (input: T) => void) {}
+
+    public ["@@transducer/init"]() {
+        return undefined;
+    }
+
+    public ["@@transducer/result"]() {
+        return undefined;
+    }
+
+    public ["@@transducer/step"](_: void, input: T) {
+        return this.f(input);
+    }
+}
+
+const IS_EMPTY_TRANFORMER: Transformer<boolean, any> = {
+    ["@@transducer/init"]: () => true,
+    ["@@transducer/result"]: (result: boolean) => result,
+    ["@@transducer/step"]: () => false,
 };
 
 class StringJoin implements CompletingTransformer<any[], string, any> {
