@@ -2,6 +2,8 @@
 
 Ergonomic TypeScript transducers for beginners and experts.
 
+[![Build Status](https://travis-ci.org/dphilipson/typescript-transducers.svg?branch=master)](https://travis-ci.org/dphilipson/typescript-transducers)
+
 ## Introduction
 
 This library will let you write code that looks like this:
