@@ -208,6 +208,31 @@ describe("count()", () => {
     });
 });
 
+describe("every()", () => {
+    it("should return true if all elements match the predicate", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .map(n => 10 * n)
+            .every(n => n > 3);
+        expect(result).toEqual(true);
+    });
+
+    it("should return false if any element fails the predicate", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .map(n => 10 * n)
+            .every(n => n < 30);
+        expect(result).toEqual(false);
+    });
+
+    it("should short-circuit if a failure is found", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator)
+            .map(n => 10 * n)
+            .every(n => n < 30);
+        expect(result).toEqual(false);
+        expect(rangeIterator.next().value).toEqual(4);
+    });
+});
+
 describe("find()", () => {
     const input = [1, 2, 3, 4, 5];
 
@@ -279,6 +304,31 @@ describe("isEmpty()", () => {
         const result = chainFrom(rangeIterator).map(n => 10 * n).isEmpty();
         expect(result).toEqual(false);
         expect(rangeIterator.next().value).toEqual(2);
+    });
+});
+
+describe("some()", () => {
+    it("should return true if any element matches the predicate", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .map(n => 10 * n)
+            .some(n => n === 30);
+        expect(result).toEqual(true);
+    });
+
+    it("should return false if no element matches the predicate", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .map(n => 10 * n)
+            .some(n => n === 1);
+        expect(result).toEqual(false);
+    });
+
+    it("should short-circuit if a match is found", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator)
+            .map(n => 10 * n)
+            .some(n => n === 30);
+        expect(result).toEqual(true);
+        expect(rangeIterator.next().value).toEqual(4);
     });
 });
 

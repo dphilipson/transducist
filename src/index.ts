@@ -6,6 +6,8 @@ const ITERATOR_SYMBOL = typeof Symbol !== "undefined"
 
 // ----- Common transducer interfaces -----
 
+// Redeclare interfaces from transducers-js to avoid a dependency on its types.
+
 export interface Reduced<TResult> {
     ["@@transducer/reduced"]: boolean;
     ["@@transducer/value"]: TResult;
@@ -69,10 +71,12 @@ export interface TransformChain<T> {
     ): TCompleteResult;
 
     count(): number;
+    every(pred: (item: T) => boolean): boolean;
     find(pred: (item: T) => boolean): T | null;
     first(): T | null;
     forEach(f: (item: T) => void): void;
     isEmpty(): boolean;
+    some(pred: (item: T) => boolean): boolean;
     stringJoin(separator: string): string;
     toArray(): T[];
 
@@ -255,12 +259,16 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(COUNT_TRANSFORMER);
     }
 
+    public every(pred: (item: T) => boolean): boolean {
+        return this.remove(pred).isEmpty();
+    }
+
     public find(pred: (item: T) => boolean): T | null {
-        return this.reduce(new Find(pred));
+        return this.filter(pred).first();
     }
 
     public first(): T | null {
-        return this.reduce(new Find<T>(() => true));
+        return this.reduce(first<T>());
     }
 
     public forEach(f: (item: T) => void): void {
@@ -269,6 +277,10 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
     public isEmpty(): boolean {
         return this.reduce(IS_EMPTY_TRANFORMER);
+    }
+
+    public some(pred: (item: T) => boolean): boolean {
+        return !this.filter(pred).isEmpty();
     }
 
     public stringJoin(separator: string): string {
@@ -322,7 +334,7 @@ class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
     public ["@@transducer/step"](
         result: TResult,
         input: TInput,
-    ): TResult | t.Reduced<TResult> {
+    ): TResult | Reduced<TResult> {
         return this.step(result, input);
     }
 }
@@ -340,7 +352,7 @@ export function makeTransducer<T, U>(
         reducer: QuittingReducer<R, U>,
         result: R,
         input: T,
-    ) => R | t.Reduced<R>,
+    ) => R | Reduced<R>,
 ): Transducer<T, U> {
     return <R>(xf: CompletingTransformer<R, any, U>) =>
         new SimpleDelegatingTransformer(
@@ -423,24 +435,14 @@ const COUNT_TRANSFORMER: Transformer<number, any> = {
     ["@@transducer/step"]: (result: number) => result + 1,
 };
 
-class Find<T> implements Transformer<T | null, T> {
-    constructor(private readonly pred: (item: T) => boolean) {}
+const FIRST_TRANSFORMER: Transformer<any, any> = {
+    ["@@transducer/init"]: () => null,
+    ["@@transducer/result"]: (result: any) => result,
+    ["@@transducer/step"]: (_: any, input: any) => t.reduced(input),
+};
 
-    public ["@@transducer/init"]() {
-        return null;
-    }
-
-    public ["@@transducer/result"](result: T | null) {
-        return result;
-    }
-
-    public ["@@transducer/step"](result: T | null, input: T) {
-        if (this.pred(input)) {
-            return t.reduced(input);
-        } else {
-            return result;
-        }
-    }
+function first<T>(): Transformer<T | null, T> {
+    return FIRST_TRANSFORMER;
 }
 
 class ForEachTransformer<T> implements Transformer<void, T> {

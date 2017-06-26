@@ -25,10 +25,12 @@
   * [`.compose(transducer)`](#composetransducer)
 - [Ending a chain](#ending-a-chain)
   * [`.count()`](#count)
+  * [`every(pred)`](#everypred)
   * [`.find(pred)`](#findpred)
   * [`.first()`](#first)
   * [`.forEach(f)`](#foreachf)
   * [`.isEmpty()`](#isempty)
+  * [`.some(pred)`](#somepred)
   * [`.stringJoin(separator)`](#stringjoinseparator)
   * [`.toArray()`](#toarray)
   * [`.toIterator()`](#toiterator)
@@ -238,6 +240,23 @@ chainFrom([1, 2, 3, 4, 5])
     .count(); // -> 3
 ```
 
+### `every(pred)`
+
+Returns `true` if all elements satisfy the predicate `pred`, or `false`
+otherwise. Short-circuits computation once a failure is found. Note that this is
+equivalent to `.remove(pred).isEmpty()`.
+
+Example:
+```ts
+chainFrom([1, 2, 3, 4, 5])
+    .map(n => 10 * n)
+    .every(n => n > 3); // -> true
+
+chainFrom([1, 2, 3, 4, 5])
+    .map(n => 10 * n)
+    .every(n => n < 30); // -> false
+```
+
 ### `.find(pred)`
 
 Returns the first element of the result which satisfies the predicate `pred`, or
@@ -287,6 +306,24 @@ chainFrom([1, 2, 3, 4, 5])
     .filter(n => n % 2 === 0)
     .isEmpty(); // -> false
 ```
+
+### `.some(pred)`
+
+Returns `true` if any element satisfies the predicate `pred`, or `false`
+otherwise. Short-circuits computation once a match is found. Note that this is
+equivalent to `.filter(pred).isEmpty() === false`.
+
+Example:
+```ts
+chainFrom([1, 2, 3, 4, 5])
+    .map(n => 10 * n)
+    .some(n => n === 30); // -> true
+
+chainFrom([1, 2, 3, 4, 5])
+            .map(n => 10 * n)
+            .some(n => n === 1); // -> false
+```
+
 
 ### `.stringJoin(separator)`
 
