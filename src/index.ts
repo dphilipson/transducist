@@ -71,6 +71,7 @@ export interface TransformChain<T> {
     isEmpty(): boolean;
     stringJoin(separator: string): string;
     toArray(): T[];
+
     toIterator(): IterableIterator<T>;
 }
 
@@ -456,7 +457,7 @@ class ForEachTransformer<T> implements Transformer<void, T> {
 const IS_EMPTY_TRANFORMER: Transformer<boolean, any> = {
     ["@@transducer/init"]: () => true,
     ["@@transducer/result"]: (result: boolean) => result,
-    ["@@transducer/step"]: () => false,
+    ["@@transducer/step"]: () => t.reduced(false),
 };
 
 class StringJoin implements CompletingTransformer<any[], string, any> {
@@ -476,17 +477,7 @@ class StringJoin implements CompletingTransformer<any[], string, any> {
     }
 }
 
-const SUM_TRANSFORMER: Transformer<number, number> = {
-    ["@@transducer/init"]: () => 0,
-    ["@@transducer/result"]: (result: number) => result,
-    ["@@transducer/step"]: (result: number, input: number) => {
-        return result + input;
-    },
-};
-
-export function toSum(): Transformer<number, number> {
-    return SUM_TRANSFORMER;
-}
+// ----- Custom transfomers -----
 
 const AVERAGE_TRANSFORMER: CompletingTransformer<
     [number, number],
@@ -541,17 +532,6 @@ const NATURAL_COMPARATOR: Comparator<number> = (a: number, b: number) => {
     }
 };
 
-export function toMin<T extends number | string>(): Transformer<T | null, T> &
-    Transformer<T | null, T>;
-export function toMin<T>(
-    comparator: (a: T, b: T) => number,
-): Transformer<T | null, T>;
-export function toMin(
-    comparator: (a: any, b: any) => number = NATURAL_COMPARATOR,
-): Transformer<any, any> {
-    return new Min(comparator);
-}
-
 export function toMax<T extends number | string>(): Transformer<T | null, T> &
     Transformer<T | null, T>;
 export function toMax<T>(
@@ -561,6 +541,17 @@ export function toMax(
     comparator: (a: any, b: any) => number = NATURAL_COMPARATOR,
 ): Transformer<any, any> {
     return new Min(invertComparator(comparator));
+}
+
+export function toMin<T extends number | string>(): Transformer<T | null, T> &
+    Transformer<T | null, T>;
+export function toMin<T>(
+    comparator: (a: T, b: T) => number,
+): Transformer<T | null, T>;
+export function toMin(
+    comparator: (a: any, b: any) => number = NATURAL_COMPARATOR,
+): Transformer<any, any> {
+    return new Min(comparator);
 }
 
 const TO_OBJECT_TRANSFORMER: Transformer<Dictionary<any>, [string, any]> = {
@@ -577,6 +568,18 @@ const TO_OBJECT_TRANSFORMER: Transformer<Dictionary<any>, [string, any]> = {
 
 export function toObject<T>(): Transformer<Dictionary<T>, [string, T]> {
     return TO_OBJECT_TRANSFORMER;
+}
+
+const SUM_TRANSFORMER: Transformer<number, number> = {
+    ["@@transducer/init"]: () => 0,
+    ["@@transducer/result"]: (result: number) => result,
+    ["@@transducer/step"]: (result: number, input: number) => {
+        return result + input;
+    },
+};
+
+export function toSum(): Transformer<number, number> {
+    return SUM_TRANSFORMER;
 }
 
 const TO_ARRAY_TRANSFORMER: Transformer<any[], any> = {

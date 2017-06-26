@@ -9,21 +9,6 @@ import {
     transducerBuilder,
 } from "../src/index";
 
-describe("toArray()", () => {
-    const input = ["a", "bb", "ccc"];
-
-    it("should return an input array if no transforms", () => {
-        const result = chainFrom(input).toArray();
-        expect(result).toEqual(input);
-    });
-
-    it("should convert iterable input to an array", () => {
-        const set = new ArrayIterator(input);
-        const result = chainFrom(set).toArray();
-        expect(result).toEqual(input);
-    });
-});
-
 describe("transformer chain", () => {
     it("should apply transformations in order", () => {
         const input = [1, 2, 3, 4, 5];
@@ -44,6 +29,8 @@ describe("transformer chain", () => {
         expect(result).toContainEqual(["c", 3]);
     });
 });
+
+// ----- Transformations -----
 
 describe("compose()", () => {
     it("should apply the specified transform", () => {
@@ -182,6 +169,8 @@ describe("takeWhile()", () => {
     });
 });
 
+// ----- Reductions -----
+
 describe("reduce()", () => {
     const aPush = <T>(array: T[], x: T): T[] => {
         array.push(x);
@@ -209,6 +198,118 @@ describe("reduce()", () => {
             .map(n => 2 * n)
             .reduce(transformer, [1]);
         expect(result).toEqual([1, 2, 4, 6]);
+    });
+});
+
+describe("count()", () => {
+    it("should return the number of elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n < 3).count();
+        expect(result).toEqual(2);
+    });
+});
+
+describe("find()", () => {
+    const input = [1, 2, 3, 4, 5];
+
+    it("should return the first element matching the predicate", () => {
+        const result = chainFrom(input).find(x => x > 2);
+        expect(result).toEqual(3);
+    });
+
+    it("should return null if there are no matching elements", () => {
+        const result = chainFrom(input).map(x => x * 2).find(x => x % 2 === 1);
+        expect(result).toBeNull();
+    });
+
+    it("should terminate computation upon finding a match", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator)
+            .map(x => 10 * x)
+            .find(x => x === 20);
+        expect(result).toEqual(20);
+        expect(rangeIterator.next().value).toEqual(3);
+    });
+});
+
+describe("first()", () => {
+    const input = [1, 2, 3, 4, 5];
+
+    it("should return the first element if it exists", () => {
+        const result = chainFrom(input).map(x => 2 * x).drop(2).first();
+        expect(result).toEqual(6);
+    });
+
+    it("should return null if there are no elements", () => {
+        const result = chainFrom(input).filter(n => n > 10).first();
+        expect(result).toBeNull();
+    });
+
+    it("should terminate computation", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator).map(x => 10 * x).first();
+        expect(result).toEqual(10);
+        expect(rangeIterator.next().value).toEqual(2);
+    });
+});
+
+describe("forEach()", () => {
+    it("should call the provided function on each input", () => {
+        const input = ["a", "bb", "ccc"];
+        const result: number[] = [];
+        chainFrom(input).map(s => s.length).forEach(n => result.push(n));
+        expect(result).toEqual([1, 2, 3]);
+    });
+});
+
+describe("isEmpty()", () => {
+    it("should return true if there are no elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n > 10).isEmpty();
+        expect(result).toEqual(true);
+    });
+
+    it("should return false if there are any elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 0)
+            .isEmpty();
+        expect(result).toEqual(false);
+    });
+
+    it("should terminate after one element", () => {
+        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
+        const result = chainFrom(rangeIterator).map(n => 10 * n).isEmpty();
+        expect(result).toEqual(false);
+        expect(rangeIterator.next().value).toEqual(2);
+    });
+});
+
+describe("stringJoin()", () => {
+    it("should concatenate the elements into a string with the separator", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 1)
+            .stringJoin(" -> ");
+        expect(result).toEqual("1 -> 3 -> 5");
+    });
+
+    it("should work if the separator is the empty string", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 1)
+            .stringJoin("");
+        expect(result).toEqual("135");
+    });
+});
+
+describe("toArray()", () => {
+    const input = ["a", "bb", "ccc"];
+
+    it("should return an input array if no transforms", () => {
+        const result = chainFrom(input).toArray();
+        expect(result).toEqual(input);
+    });
+
+    it("should convert iterable input to an array", () => {
+        const set = new ArrayIterator(input);
+        const result = chainFrom(set).toArray();
+        expect(result).toEqual(input);
     });
 });
 
@@ -258,134 +359,10 @@ describe("toIterator()", () => {
     });
 });
 
-describe("forEach()", () => {
-    it("should call the provided function on each input", () => {
-        const input = ["a", "bb", "ccc"];
-        const result: number[] = [];
-        chainFrom(input).map(s => s.length).forEach(n => result.push(n));
-        expect(result).toEqual([1, 2, 3]);
-    });
-});
-
-describe("first()", () => {
-    const input = [1, 2, 3, 4, 5];
-
-    it("should return the first element if it exists", () => {
-        const result = chainFrom(input).map(x => 2 * x).drop(2).first();
-        expect(result).toEqual(6);
-    });
-
-    it("should return null if there are no elements", () => {
-        const result = chainFrom(input).filter(n => n > 10).first();
-        expect(result).toBeNull();
-    });
-
-    it("should terminate computation", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator).map(x => 10 * x).first();
-        expect(result).toEqual(10);
-        expect(rangeIterator.next().value).toEqual(2);
-    });
-});
-
-describe("find()", () => {
-    const input = [1, 2, 3, 4, 5];
-
-    it("should return the first element matching the predicate", () => {
-        const result = chainFrom(input).find(x => x > 2);
-        expect(result).toEqual(3);
-    });
-
-    it("should return null if there are no matching elements", () => {
-        const result = chainFrom(input).map(x => x * 2).find(x => x % 2 === 1);
-        expect(result).toBeNull();
-    });
-
-    it("should terminate computation upon finding a match", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator)
-            .map(x => 10 * x)
-            .find(x => x === 20);
-        expect(result).toEqual(20);
-        expect(rangeIterator.next().value).toEqual(3);
-    });
-});
-
-describe("stringJoin()", () => {
-    it("should concatenate the elements into a string with the separator", () => {
-        const result = chainFrom([1, 2, 3, 4, 5])
-            .filter(n => n % 2 === 1)
-            .stringJoin(" -> ");
-        expect(result).toEqual("1 -> 3 -> 5");
-    });
-
-    it("should work if the separator is the empty string", () => {
-        const result = chainFrom([1, 2, 3, 4, 5])
-            .filter(n => n % 2 === 1)
-            .stringJoin("");
-        expect(result).toEqual("135");
-    });
-});
-
-describe("count()", () => {
-    it("should return the number of elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n < 3).count();
-        expect(result).toEqual(2);
-    });
-});
-
-describe("isEmpty()", () => {
-    it("should return true if there are no elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n > 10).isEmpty();
-        expect(result).toEqual(true);
-    });
-
-    it("should return false if there are any elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5])
-            .filter(n => n % 2 === 0)
-            .isEmpty();
-        expect(result).toEqual(false);
-    });
-});
-
-describe("toSum()", () => {
-    it("should sum the elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).reduce(toSum());
-        expect(result).toEqual(15);
-    });
-});
-
 describe("toAverage()", () => {
     it("should average the elements", () => {
         const result = chainFrom([1, 2, 3, 4, 5]).reduce(toAverage());
         expect(result).toEqual(3);
-    });
-});
-
-describe("toMin()", () => {
-    it("should take the min of numbers", () => {
-        const result = chainFrom([3, 4, 5, 1, 2]).reduce(toMin());
-        expect(result).toEqual(1);
-    });
-
-    it("should take the min of strings", () => {
-        const result = chainFrom(["c", "b", "a", "e", "d"]).reduce(toMin());
-        expect(result).toEqual("a");
-    });
-
-    it("should return null on no input", () => {
-        const result = chainFrom([]).reduce(toMin());
-        expect(result).toBeNull();
-    });
-
-    it("should use the comparator if provided", () => {
-        const result = chainFrom({ a: 2, b: 1, c: 3 }).reduce(
-            toMin(
-                (a: [string, number], b: [string, number]) =>
-                    a[1] < b[1] ? -1 : 1,
-            ),
-        );
-        expect(result).toEqual(["b", 1]);
     });
 });
 
@@ -416,12 +393,46 @@ describe("toMax()", () => {
     });
 });
 
+describe("toMin()", () => {
+    it("should take the min of numbers", () => {
+        const result = chainFrom([3, 4, 5, 1, 2]).reduce(toMin());
+        expect(result).toEqual(1);
+    });
+
+    it("should take the min of strings", () => {
+        const result = chainFrom(["c", "b", "a", "e", "d"]).reduce(toMin());
+        expect(result).toEqual("a");
+    });
+
+    it("should return null on no input", () => {
+        const result = chainFrom([]).reduce(toMin());
+        expect(result).toBeNull();
+    });
+
+    it("should use the comparator if provided", () => {
+        const result = chainFrom({ a: 2, b: 1, c: 3 }).reduce(
+            toMin(
+                (a: [string, number], b: [string, number]) =>
+                    a[1] < b[1] ? -1 : 1,
+            ),
+        );
+        expect(result).toEqual(["b", 1]);
+    });
+});
+
 describe("toObject()", () => {
     it("should build an object out of key-value pairs", () => {
         const result = chainFrom(["a", "bb", "ccc"])
             .map(s => [s, s.length])
             .reduce(toObject<number>());
         expect(result).toEqual({ a: 1, bb: 2, ccc: 3 });
+    });
+});
+
+describe("toSum()", () => {
+    it("should sum the elements", () => {
+        const result = chainFrom([1, 2, 3, 4, 5]).reduce(toSum());
+        expect(result).toEqual(15);
     });
 });
 

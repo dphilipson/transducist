@@ -94,9 +94,9 @@ With NPM:
 ```
 npm install --save typescript-transducers
 ```
-This library works fine on ES5 without any polyfills, but its TypeScript
-definitions depend on ES6 definitions for the `Iterable` type. If you use it
-with TypeScript, you must make definitions for `Iterable` and `Iterator`
+This library works fine on ES5 without any polyfills or transpilation, but its
+TypeScript definitions depend on ES6 definitions for the `Iterable` type. If you
+use it with TypeScript, you must make definitions for `Iterable` and `Iterator`
 available by doing one of the following:
 
 * In `tsconfig.json`, set `"target"` to `"es6"` or higher.
@@ -111,7 +111,7 @@ Import with
 ```ts
 import { chainFrom } from "typescript-transducers";
 ```
-Start a chain by calling `chainFrom` on any iterable, including an array or a
+Start a chain by calling `chainFrom()` on any iterable, including an array or a
 string (or an object, see the full [API](#api)).
 ```ts
 const result = chainFrom(["a", "bb", "ccc", "dddd", "eeeee"])
@@ -127,6 +127,9 @@ chain and produces a result.
 ```ts
     .toArray(); // -> ["A", "CCC"]
 ```
+Other terminating methods include `.forEach()`, `.count()`, and `.find()`, among
+others.
+
 For a list of all possible transformations and terminations, see [API](#api).
 
 ## Advanced Usage
