@@ -33,7 +33,7 @@ const result = chainFrom(allProjects)
     .filter(owner => owner.name === "Brad")
     .flatMap(owner => owner.children)
     .take(100)
-    .forEach(person => console.log(person));
+    .toArray();
 ```
 This computation is very efficient because no intermediate arrays are created
 and work stops early once 100 people are found.
@@ -65,9 +65,9 @@ Provide an API for using transducers that is…
   with them. By using the general purpose `.compose()` to place custom
   transducers in the middle of a chain, any kind of novel transform can be added
   while still maintaining the efficiency bonuses of laziness and
-  short-cicuiting. Further, the library can also be used to construct standalone
-  transducers which may be used elsewhere by other libraries that incorporate
-  transducers into their API.
+  short-circuiting. Further, the library can also be used to construct
+  standalone transducers which may be used elsewhere by other libraries that
+  incorporate transducers into their API.
 
 * **…convenient with TypeScript IDEs**. Typical transducer libraries, such as
   [transducers.js](https://github.com/jlongster/transducers.js) and
@@ -213,7 +213,7 @@ function replace<T>(initial: T, replacement: T) {
     });
 }
 ```
-All of this libary's transformation methods are implemented internally with
+All of this library's transformation methods are implemented internally with
 calls to `.compose()`.
 
 ### Using custom reductions

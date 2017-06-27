@@ -25,7 +25,7 @@
   * [`.compose(transducer)`](#composetransducer)
 - [Ending a chain](#ending-a-chain)
   * [`.count()`](#count)
-  * [`every(pred)`](#everypred)
+  * [`.every(pred)`](#everypred)
   * [`.find(pred)`](#findpred)
   * [`.first()`](#first)
   * [`.forEach(f)`](#foreachf)
@@ -240,7 +240,7 @@ chainFrom([1, 2, 3, 4, 5])
     .count(); // -> 3
 ```
 
-### `every(pred)`
+### `.every(pred)`
 
 Returns `true` if all elements satisfy the predicate `pred`, or `false`
 otherwise. Short-circuits computation once a failure is found. Note that this is
