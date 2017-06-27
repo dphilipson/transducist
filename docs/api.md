@@ -382,12 +382,12 @@ elements are of specific types- for example, `toSum()` can only be used on a
 chain of numbers.
 
 They are kept as separate transformer objects, rather than added as additional
-termination methods, to maintain type safety. TypeScript does not provide a way
-to restrict which of an interface's methods may be called depending on the value
-of a type parameter, so adding these as termination methods would mean they
-could be called regardless of the current element type. By contrast, passing one
-of these reducers to `reduce()` on a chain of the incorrect type will be caught
-as an error by TypeScript.
+termination methods, to maintain type safety in TypeScript projects. TypeScript
+does not provide a way to restrict which of an interface's methods may be called
+depending on the value of a type parameter, so adding these as termination
+methods would mean they could be called regardless of the current element type.
+By contrast, passing one of these reducers to `reduce()` on a chain of the
+incorrect type will be caught as an error by TypeScript.
 
 ### `toSum()`
 

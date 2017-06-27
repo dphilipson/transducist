@@ -1,9 +1,9 @@
-# TypeScript Transducers
+# Transducist
 
-Ergonomic TypeScript transducers for beginners and experts.
+Ergonomic JavaScript/TypeScript transducers for beginners and experts.
 
 [![Build
-Status](https://travis-ci.org/dphilipson/typescript-transducers.svg?branch=master)](https://travis-ci.org/dphilipson/typescript-transducers)
+Status](https://travis-ci.org/dphilipson/transducist.svg?branch=master)](https://travis-ci.org/dphilipson/transducist)
 
 ## Table of Contents
 
@@ -82,9 +82,9 @@ Provide an API for using transducers that is…
   lose the typechecking and autocomplete benefits, but keep all the other
   advantages.
 
-* **…typesafe**. Avoid the type fuzziness that is present in other transform
-  chaining APIs. For example, under Lodash's type definitions, the following
-  typechecks:
+* **…typesafe** when used in a TypeScript project. Avoid the type fuzziness that
+  is present in other transform chaining APIs. For example, under Lodash's type
+  definitions, the following typechecks:
   ```ts
   const badSum = _([{a: true}, {b: false}]).sum();
   // Returns "[object Object][object Object]", if you're curious.
@@ -95,7 +95,7 @@ Provide an API for using transducers that is…
   const goodSum = chainFrom([1, 2, 3]).reduce(toSum()); // -> 6
   ```
 
-* **…fast**! Typescript-transducers is a thin wrapper on top of
+* **…fast**! Transducist is a thin wrapper on top of
   [transducers-js](https://github.com/cognitect-labs/transducers-js) and is
   therefore very efficient. See this [blog
   post](http://jlongster.com/Transducers.js-Round-2-with-Benchmarks) by the
@@ -107,16 +107,16 @@ Provide an API for using transducers that is…
 
 With Yarn:
 ```
-yarn add typescript-transducers
+yarn add transducist
 ```
 With NPM:
 ```
-npm install --save typescript-transducers
+npm install --save transducist
 ```
 This library works fine on ES5 without any polyfills or transpilation, but its
 TypeScript definitions depend on ES6 definitions for the `Iterable` type. If you
-use it with TypeScript, you must make definitions for `Iterable` and `Iterator`
-available by doing one of the following:
+use TypeScript in your project, you must make definitions for `Iterable` and
+`Iterator` available by doing one of the following:
 
 * In `tsconfig.json`, set `"target"` to `"es6"` or higher.
 * In `tsconfig.json`, set `"libs"` to include `"es2015.iterable"` or something
@@ -128,7 +128,7 @@ available by doing one of the following:
 
 Import with
 ```ts
-import { chainFrom } from "typescript-transducers";
+import { chainFrom } from "transducist";
 ```
 Start a chain by calling `chainFrom()` on any iterable, including an array or a
 string (or an object, see the full [API](#api)).
@@ -150,7 +150,7 @@ Other terminating methods include `.forEach()`, `.count()`, and `.find()`, among
 others.
 
 For a list of all possible transformations and terminations, see the [full API
-docs](https://github.com/dphilipson/typescript-transducers/blob/master/docs/api.md#api).
+docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api).
 
 ## Advanced Usage
 
@@ -166,7 +166,7 @@ protocol](https://github.com/cognitect-labs/transducers-js#the-transducer-protoc
 can be added to the chain using the `.compose()` method. This includes
 transducers defined by other libraries, so we could for instance do
 ```ts
-import { chainFrom } from "typescript-transducers";
+import { chainFrom } from "transducist";
 import { cat } from "transducers.js";
 
 const result = chainFrom([[1, 2], [3, 4, 5], [6]])
@@ -179,11 +179,12 @@ As an example of implementing a custom transducer, suppose we want to implement
 a "replace" operation, in which we provide two values and all instances of the
 first value are replaced by the second one. We can do so as follows:
 ```ts
+// Imports not needed if not using TypeScript.
 import {
     CompletingTransformer,
     Transducer,
     Transformer,
- } from "typescript-transducers";
+ } from "transducist";
 
 function replace<T>(initial: T, replacement: T): Transducer<T, T> {
     return (xf: CompletingTransformer<T, any, T>) => ({
@@ -235,7 +236,7 @@ understand the transducer protocol, such as
 by starting the chain by calling `transducerBuilder()` and calling `.build()`
 when done, for example:
 ```ts
-import { chainFrom, transducerBuilder } from "typescript-transducers";
+import { chainFrom, transducerBuilder } from "transducist";
 
 const firstThreeOdds = transducerBuilder<number>()
     .filter(n => n % 2 === 1)
@@ -253,6 +254,6 @@ This is a good way to factor out a transformation for reuse.
 ## API
 
 View the [full API
-docs](https://github.com/dphilipson/typescript-transducers/blob/master/docs/api.md#api).
+docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api).
 
 Copyright © 2017 David Philipson
