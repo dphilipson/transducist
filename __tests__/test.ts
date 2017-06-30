@@ -422,11 +422,6 @@ describe("toMax()", () => {
         expect(result).toEqual(5);
     });
 
-    it("should take the max of strings", () => {
-        const result = chainFrom(["c", "b", "a", "e", "d"]).reduce(toMax());
-        expect(result).toEqual("e");
-    });
-
     it("should return null on no input", () => {
         const result = chainFrom([]).reduce(toMax());
         expect(result).toBeNull();
@@ -447,11 +442,6 @@ describe("toMin()", () => {
     it("should take the min of numbers", () => {
         const result = chainFrom([3, 4, 5, 1, 2]).reduce(toMin());
         expect(result).toEqual(1);
-    });
-
-    it("should take the min of strings", () => {
-        const result = chainFrom(["c", "b", "a", "e", "d"]).reduce(toMin());
-        expect(result).toEqual("a");
     });
 
     it("should return null on no input", () => {
