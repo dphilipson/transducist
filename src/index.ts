@@ -362,6 +362,51 @@ export function makeTransducer<T, U>(
         );
 }
 
+class RangeIterator implements Iterator<number> {
+    private readonly end: number;
+    private readonly step: number;
+    private i: number;
+
+    constructor(startOrEnd: number, end?: number, step?: number) {
+        if (end == null) {
+            this.i = 0;
+            this.end = startOrEnd;
+            this.step = 1;
+        } else if (step == null) {
+            this.i = startOrEnd;
+            this.end = end;
+            this.step = 1;
+        } else {
+            this.i = startOrEnd;
+            this.end = end;
+            this.step = step;
+        }
+    }
+
+    public [ITERATOR_SYMBOL]() {
+        return this;
+    }
+
+    public next(): IteratorResult<number> {
+        const { i, end, step } = this;
+        if (i < end) {
+            const result = { done: false, value: i };
+            this.i += step;
+            return result;
+        } else {
+            return { done: true } as any;
+        }
+    }
+}
+
+export function rangeIterator(
+    startOrEnd: number,
+    end?: number,
+    step?: number,
+): IterableIterator<number> {
+    return new RangeIterator(startOrEnd, end, step) as any;
+}
+
 export function reduced<T>(result: T): Reduced<T> {
     return t.reduced(result);
 }

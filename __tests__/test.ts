@@ -1,6 +1,7 @@
 import * as t from "transducers-js";
 import {
     chainFrom,
+    rangeIterator,
     toAverage,
     toMax,
     toMin,
@@ -146,10 +147,10 @@ describe("take()", () => {
     });
 
     it("should terminate after pulling n elements", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator).take(2).toArray();
+        const iterator = rangeIterator(1, 5);
+        const result = chainFrom(iterator).take(2).toArray();
         expect(result).toEqual([1, 2]);
-        expect(rangeIterator.next().value).toEqual(3);
+        expect(iterator.next().value).toEqual(3);
     });
 });
 
@@ -224,12 +225,10 @@ describe("every()", () => {
     });
 
     it("should short-circuit if a failure is found", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator)
-            .map(n => 10 * n)
-            .every(n => n < 30);
+        const iterator = rangeIterator(1, 5);
+        const result = chainFrom(iterator).map(n => 10 * n).every(n => n < 30);
         expect(result).toEqual(false);
-        expect(rangeIterator.next().value).toEqual(4);
+        expect(iterator.next().value).toEqual(4);
     });
 });
 
@@ -247,12 +246,10 @@ describe("find()", () => {
     });
 
     it("should terminate computation upon finding a match", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator)
-            .map(x => 10 * x)
-            .find(x => x === 20);
+        const iterator = rangeIterator(1, 5);
+        const result = chainFrom(iterator).map(x => 10 * x).find(x => x === 20);
         expect(result).toEqual(20);
-        expect(rangeIterator.next().value).toEqual(3);
+        expect(iterator.next().value).toEqual(3);
     });
 });
 
@@ -270,10 +267,10 @@ describe("first()", () => {
     });
 
     it("should terminate computation", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator).map(x => 10 * x).first();
+        const iterator = rangeIterator(1, 5);
+        const result = chainFrom(iterator).map(x => 10 * x).first();
         expect(result).toEqual(10);
-        expect(rangeIterator.next().value).toEqual(2);
+        expect(iterator.next().value).toEqual(2);
     });
 });
 
@@ -300,10 +297,10 @@ describe("isEmpty()", () => {
     });
 
     it("should terminate after one element", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator).map(n => 10 * n).isEmpty();
+        const iterator = rangeIterator(1, 5);
+        const result = chainFrom(iterator).map(n => 10 * n).isEmpty();
         expect(result).toEqual(false);
-        expect(rangeIterator.next().value).toEqual(2);
+        expect(iterator.next().value).toEqual(2);
     });
 });
 
@@ -323,12 +320,10 @@ describe("some()", () => {
     });
 
     it("should short-circuit if a match is found", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const result = chainFrom(rangeIterator)
-            .map(n => 10 * n)
-            .some(n => n === 30);
+        const iterator = rangeIterator(1, 5);
+        const result = chainFrom(iterator).map(n => 10 * n).some(n => n === 30);
         expect(result).toEqual(true);
-        expect(rangeIterator.next().value).toEqual(4);
+        expect(iterator.next().value).toEqual(4);
     });
 });
 
@@ -357,8 +352,8 @@ describe("toArray()", () => {
     });
 
     it("should convert iterable input to an array", () => {
-        const set = new ArrayIterator(input);
-        const result = chainFrom(set).toArray();
+        const iterator = input[Symbol.iterator]();
+        const result = chainFrom(iterator).toArray();
         expect(result).toEqual(input);
     });
 });
@@ -376,11 +371,11 @@ describe("toIterator()", () => {
     });
 
     it("should respect early termination", () => {
-        const rangeIterator = new ArrayIterator([1, 2, 3, 4, 5]);
-        const truncatedIterator = chainFrom(rangeIterator).take(2).toIterator();
+        const iterator = rangeIterator(1, 5);
+        const truncatedIterator = chainFrom(iterator).take(2).toIterator();
         const result = Array.from(truncatedIterator);
         expect(result).toEqual([1, 2]);
-        expect(rangeIterator.next().value).toEqual(3);
+        expect(iterator.next().value).toEqual(3);
     });
 
     it("should work with mapcat()", () => {
@@ -493,22 +488,23 @@ describe("transducer builder", () => {
     });
 });
 
-class ArrayIterator<T> implements IterableIterator<T> {
-    private i: number = 0;
+// ----- Utilities -----
 
-    constructor(private readonly array: T[]) {}
+describe("rangeIterator()", () => {
+    it("should iterate from 0 to end with single argument", () => {
+        expect(Array.from(rangeIterator(5))).toEqual([0, 1, 2, 3, 4]);
+    });
 
-    public [Symbol.iterator]() {
-        return this;
-    }
+    it("should iterate from start to end with two arguments", () => {
+        expect(Array.from(rangeIterator(2, 5))).toEqual([2, 3, 4]);
+    });
 
-    public next(): IteratorResult<T> {
-        const { i, array } = this;
-        if (i < array.length) {
-            this.i++;
-            return { done: false, value: array[i] };
-        } else {
-            return { done: true } as any;
-        }
-    }
-}
+    it("should iterate in steps with three arguments", () => {
+        expect(Array.from(rangeIterator(2, 7, 2))).toEqual([2, 4, 6]);
+    });
+
+    it("should be empty if start is at least end", () => {
+        expect(Array.from(rangeIterator(2, 2))).toEqual([]);
+        expect(Array.from(rangeIterator(3, 2))).toEqual([]);
+    });
+});

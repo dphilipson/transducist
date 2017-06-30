@@ -43,6 +43,7 @@
   * [`toObject()`](#toobject)
 - [Utility functions](#utility-functions)
   * [`makeTransducer(f: (reducer, result, input) => result)`](#maketransducerf-reducer-result-input--result)
+  * [`rangeIterator(start?, end, step?)`](#rangeiteratorstart-end-step)
   * [`reduced(result)`](#reducedresult)
 
 <!-- tocstop -->
@@ -492,6 +493,32 @@ function replace<T>(initial: T, replacement: T): Transducer<T, T> {
         },
     });
 }
+```
+
+### `rangeIterator(start?, end, step?)`
+
+Returns an iterable which outputs values from `start` inclusive to `end`
+exclusive, increasing by `step` each time. `start` and `step` may be omitted,
+and default to `0` and `1` respectively.
+
+Example:
+```ts
+chainFrom(rangeIterator(3))
+    .map(i => "String #" + i)
+    .toArray(); // -> ["String #0", "String #1", "String#2"]
+
+chainFrom(rangeIterator(10, 15))
+    .toArray(); // -> [10, 11, 12, 13, 14]
+
+chainFrom(rangeIterator(10, 15, 2))
+    .toArray(); // -> [10, 12, 14]
+```
+The iterator is lazy, so for example the following will return quickly and not
+use up all your memory:
+```ts
+chainFrom(rangeIterator(1000000000000))
+    .take(3)
+    .toArray(); // -> [0, 1, 2]
 ```
 
 ### `reduced(result)`
