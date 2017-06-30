@@ -539,8 +539,7 @@ const NATURAL_COMPARATOR: Comparator<number> = (a: number, b: number) => {
     }
 };
 
-export function toMax<T extends number | string>(): Transformer<T | null, T> &
-    Transformer<T | null, T>;
+export function toMax(): Transformer<number | null, number>;
 export function toMax<T>(
     comparator: (a: T, b: T) => number,
 ): Transformer<T | null, T>;
@@ -550,8 +549,7 @@ export function toMax(
     return new Min(invertComparator(comparator));
 }
 
-export function toMin<T extends number | string>(): Transformer<T | null, T> &
-    Transformer<T | null, T>;
+export function toMin(): Transformer<number | null, number>;
 export function toMin<T>(
     comparator: (a: T, b: T) => number,
 ): Transformer<T | null, T>;

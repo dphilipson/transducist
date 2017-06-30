@@ -411,9 +411,8 @@ chainFrom(["a", "bb", "ccc"])
 ### `toMin(comparator?)`
 
 Returns the minimum element, according to the comparator. If no comparator is
-provided, then this reducer may only be applied if the elements are strings or
-numbers and uses the natural comparator. Returns `null` if there are no
-elements.
+provided, then this reducer may only be applied if the elements are numbers and
+uses the natural comparator. Returns `null` if there are no elements.
 
 Example:
 ```ts
@@ -425,9 +424,8 @@ chainFrom(["a", "bb", "ccc"])
 ### `toMax(comparator?)`
 
 Returns the maximum element, according to the comparator. If no comparator is
-provided, then this reducer may only be applied if the elements are strings or
-numbers and uses the natural comparator. Returns `null` if there are no
-elements.
+provided, then this reducer may only be applied if the elements are numbers and
+uses the natural comparator. Returns `null` if there are no elements.
 
 Example:
 ```ts
