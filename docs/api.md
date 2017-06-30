@@ -499,7 +499,8 @@ function replace<T>(initial: T, replacement: T): Transducer<T, T> {
 
 Returns an iterable which outputs values from `start` inclusive to `end`
 exclusive, increasing by `step` each time. `start` and `step` may be omitted,
-and default to `0` and `1` respectively.
+and default to `0` and `1` respectively. A `start` greater than or equal to
+`end` is permitted, and produces an empty iterator.
 
 Example:
 ```ts
