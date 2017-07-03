@@ -9,8 +9,5 @@
   "exclude": [
     "__tests__/**/*"
   ],
-  "extends": "./tsconfig.json",
-  "include": [
-    "src/**/*"
-  ]
+  "extends": "./tsconfig.json"
 }

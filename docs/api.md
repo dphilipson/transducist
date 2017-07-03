@@ -497,10 +497,19 @@ function replace<T>(initial: T, replacement: T): Transducer<T, T> {
 
 ### `rangeIterator(start?, end, step?)`
 
-Returns an iterable which outputs values from `start` inclusive to `end`
-exclusive, increasing by `step` each time. `start` and `step` may be omitted,
-and default to `0` and `1` respectively. A `start` greater than or equal to
-`end` is permitted, and produces an empty iterator.
+Returns an iterator which outputs values from `start` inclusive to `end`
+exclusive, incrementing by `step` each time. `start` and `step` may be omitted,
+and default to `0` and `1` respectively.
+
+If step is positive, then outputs values incrementing upwards from `start` until
+the last value less than `end`. If step is negative, then outputs values
+incrementing downwards from `start` until the last value greater than `end`.
+
+A `start` greater than or equal to `end` for positive `step`, or a `start` less
+than or equal to `end` for a negative `step`, is permitted, and produces an
+empty iterator.
+
+Throws an error if `step` is zero.
 
 Example:
 ```ts
@@ -513,6 +522,9 @@ chainFrom(rangeIterator(10, 15))
 
 chainFrom(rangeIterator(10, 15, 2))
     .toArray(); // -> [10, 12, 14]
+
+chainFrom(rangeIterator(15, 10, -2))
+    .toArray(); // -> [15, 13, 11]
 ```
 The iterator is lazy, so for example the following will return quickly and not
 use up all your memory:

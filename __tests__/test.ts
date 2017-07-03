@@ -503,8 +503,21 @@ describe("rangeIterator()", () => {
         expect(Array.from(rangeIterator(2, 7, 2))).toEqual([2, 4, 6]);
     });
 
-    it("should be empty if start is at least end", () => {
+    it("should iterate backwards if the step is negative", () => {
+        expect(Array.from(rangeIterator(7, 2, -2))).toEqual([7, 5, 3]);
+    });
+
+    it("should be empty if start is at least end and step is positive", () => {
         expect(Array.from(rangeIterator(2, 2))).toEqual([]);
         expect(Array.from(rangeIterator(3, 2))).toEqual([]);
+    });
+
+    it("should be empty if start is at most end and step is negative", () => {
+        expect(Array.from(rangeIterator(2, 2, -1))).toEqual([]);
+        expect(Array.from(rangeIterator(2, 3, -1))).toEqual([]);
+    });
+
+    it("should throw if step is 0", () => {
+        expect(() => rangeIterator(1, 5, 0)).toThrowError(/0/);
     });
 });

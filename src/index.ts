@@ -368,7 +368,9 @@ class RangeIterator implements Iterator<number> {
     private i: number;
 
     constructor(startOrEnd: number, end?: number, step?: number) {
-        if (end == null) {
+        if (step === 0) {
+            throw new Error("Step in rangeIterator cannot be 0");
+        } else if (end == null) {
             this.i = 0;
             this.end = startOrEnd;
             this.step = 1;
@@ -389,7 +391,7 @@ class RangeIterator implements Iterator<number> {
 
     public next(): IteratorResult<number> {
         const { i, end, step } = this;
-        if (i < end) {
+        if ((step > 0 && i < end) || (step < 0 && i > end)) {
             const result = { done: false, value: i };
             this.i += step;
             return result;
