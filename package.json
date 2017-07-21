@@ -21,14 +21,14 @@
   "scripts": {
     "build": "yarn run clean && tsc -p tsconfig.build.json",
     "clean": "rm -rf dist/*",
-    "format": "yarn run format-glob -- \"'src/**/*.{ts,tsx}'\"",
+    "format": "yarn run format-glob -- 'src/**/*.{ts,tsx}'",
     "format-glob": "prettier --tab-width 4 --trailing-comma all --write",
     "generate-toc": "markdown-toc -i README.md && markdown-toc -i docs/*.md && true",
     "jest": "jest",
     "jest-watch": "yarn run jest -- --watch",
     "lint": "tslint --project .",
     "precommit": "lint-staged",
-    "prepublish": "yarn run build",
+    "prepare": "yarn run build",
     "test": "yarn run lint && tsc && yarn run jest"
   },
   "jest": {
