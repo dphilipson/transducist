@@ -63,7 +63,7 @@
     "prettier": "^1.4.4",
     "ts-jest": "^20.0.6",
     "tslint": "^5.4.3",
-    "typescript": "^2.3.4"
+    "typescript": "^2.7.1"
   },
   "dependencies": {
     "transducers-js": "^0.4.174"

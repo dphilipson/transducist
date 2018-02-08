@@ -314,7 +314,7 @@ class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
             TCompleteResult,
             TOutput
         >,
-        f: <TResult>(
+        f: (
             reducer: QuittingReducer<TResult, TOutput>,
         ) => QuittingReducer<TResult, TInput>,
     ) {
@@ -467,7 +467,7 @@ function take<T>(n: number): Transducer<T, T> {
         if (i < n) {
             i++;
             const output = reducer(result, input);
-            return i === n ? t.reduced(output) : output;
+            return i === n ? t.ensureReduced(output) : output;
         } else {
             return t.reduced(result);
         }

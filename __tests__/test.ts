@@ -185,7 +185,9 @@ describe("reduce()", () => {
     };
 
     it("should use a reducer and initial value", () => {
-        const result = chainFrom([1, 2, 3]).map(n => 2 * n).reduce(aPush, []);
+        const result = chainFrom([1, 2, 3])
+            .map(n => 2 * n)
+            .reduce<number[]>(aPush, []);
         expect(result).toEqual([2, 4, 6]);
     });
 
