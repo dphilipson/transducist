@@ -199,7 +199,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     public keep<U>(
         f: (item: T, index: number) => U | null | void,
     ): CombinedBuilder<TBase, U> {
-        return this.compose(keepWithIndex(f));
+        return this.compose(keep(f));
     }
 
     public map<U>(f: (item: T, index: number) => U): CombinedBuilder<TBase, U> {
@@ -372,19 +372,26 @@ class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
  * (reducer -> reducer) is equivalent to the actual type used here:
  *
  *   ((reducer, result, input) -> newResult).
+ *
+ * Additionally, the function is provided the current index, to support creation
+ * of APIs similar to JavaScript's array transformation methods such as `.map()`
+ * and `.filter()` in which the index of the current element is passed to the
+ * provided function as a second argument.
  */
 export function makeTransducer<T, U>(
     f: <R>(
         reducer: QuittingReducer<R, U>,
         result: R,
         input: T,
+        index: number,
     ) => R | Reduced<R>,
 ): Transducer<T, U> {
+    let i = 0;
     return <R>(xf: CompletingTransformer<R, any, U>) =>
         new SimpleDelegatingTransformer(
             xf,
             (reducer: QuittingReducer<R, U>) => (result: R, input: T) =>
-                f(reducer, result, input),
+                f(reducer, result, input, i++),
         );
 }
 
@@ -439,13 +446,15 @@ export function reduced<T>(result: T): Reduced<T> {
     return t.reduced(result);
 }
 
+export function isReduced(result: any): result is Reduced<any> {
+    return t.isReduced(result);
+}
+
 // ----- Custom transducers -----
 
 function dedupe<T>(): Transducer<T, T> {
     let last: T | {} = {};
-    return makeTransducer(<
-        R
-    >(reducer: QuittingReducer<R, T>, result: R, input: T) => {
+    return makeTransducer((reducer, result, input) => {
         if (input !== last) {
             last = input;
             return reducer(result, input);
@@ -457,15 +466,13 @@ function dedupe<T>(): Transducer<T, T> {
 
 function interpose<T>(separator: T): Transducer<T, T> {
     let isStarted = false;
-    return makeTransducer(<
-        R
-    >(reducer: QuittingReducer<R, T>, result: R, input: T) => {
+    return makeTransducer((reducer, result, input) => {
         if (isStarted) {
             const withSeparator = reducer(result, separator);
-            if (t.isReduced(withSeparator)) {
+            if (isReduced(withSeparator)) {
                 return withSeparator;
             } else {
-                return reducer(withSeparator as R, input);
+                return reducer(withSeparator, input);
             }
         } else {
             isStarted = true;
@@ -474,11 +481,11 @@ function interpose<T>(separator: T): Transducer<T, T> {
     });
 }
 
-function keep<T, U>(f: (item: T) => U | null | void): Transducer<T, U> {
-    return makeTransducer(<
-        R
-    >(reducer: QuittingReducer<R, U>, result: R, input: T) => {
-        const output = f(input);
+function keep<T, U>(
+    f: (item: T, index: number) => U | null | void,
+): Transducer<T, U> {
+    return makeTransducer((reducer, result, input, index) => {
+        const output = f(input, index);
         return output == null ? result : reducer(result, output);
     });
 }
@@ -522,7 +529,6 @@ function withIndex<T = any, U = any, V = any>(
 const dropWhileWithIndex = withIndex(t.dropWhile);
 const filterWithIndex = withIndex(t.filter);
 const flatMapWithIndex = withIndex<any, any, any>(t.mapcat);
-const keepWithIndex = withIndex(keep);
 const mapWithIndex = withIndex(t.map);
 const partitionByWithIndex = withIndex(t.partitionBy);
 const removeWithIndex = withIndex(t.remove);
@@ -735,7 +741,7 @@ class TransducerIterable<TInput, TOutput> implements Iterator<TOutput> {
                         [],
                         value,
                     );
-                    if (t.isReduced(outValues)) {
+                    if (isReduced(outValues)) {
                         this.hasSeenEnd = true;
                     }
                     this.upcoming = new ArrayIterator(t.unreduced(outValues));

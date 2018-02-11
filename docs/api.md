@@ -42,7 +42,8 @@
   * [`toMax(comparator?)`](#tomaxcomparator)
   * [`toObject()`](#toobject)
 - [Utility functions](#utility-functions)
-  * [`makeTransducer(f: (reducer, result, input) => result)`](#maketransducerf-reducer-result-input--result)
+  * [`isReduced(result)`](#isreducedresult)
+  * [`makeTransducer(f: (reducer, result, input, index) => result)`](#maketransducerf-reducer-result-input-index--result)
   * [`rangeIterator(start?, end, step?)`](#rangeiteratorstart-end-step)
   * [`reduced(result)`](#reducedresult)
 
@@ -449,7 +450,12 @@ chainFrom(["a", "bb", "ccc"])
 
 ## Utility functions
 
-### `makeTransducer(f: (reducer, result, input) => result)`
+### `isReduced(result)`
+
+Returns true if `result` is a reduced value as described by the [transducer
+protocol](https://github.com/cognitect-labs/transducers-js#reduced).
+
+### `makeTransducer(f: (reducer, result, input, index) => result)`
 
 Convenience function for defining new transducers. Given a function which takes
 a reducer and returns another reducer, return a transducer.
@@ -462,7 +468,12 @@ terms of such a function, removing the boilerplate of defining
 
 Note that the signature `reducer => reducer` expands to `reducer => (result,
 input) => result`, which after uncurrying becomes `(reducer, result, input) =>
-result`, the actual type in the signature of this function.
+result`, which is (almost) the actual type in the signature of this function.
+
+Additionally, the function is provided the current index, to support creation of
+APIs similar to JavaScript's array transformation methods such as `.map()` and
+`.filter()` in which the index of the current element is passed to the provided
+function as a second argument.
 
 An example is given in the [Advanced
 Usage](https://github.com/dphilipson/typescript-transducers#using-custom-transducers)
