@@ -71,12 +71,12 @@ export interface TransformChain<T> {
     ): TCompleteResult;
 
     count(): number;
-    every(pred: (item: T) => boolean): boolean;
-    find(pred: (item: T) => boolean): T | null;
+    every(pred: (item: T, index: number) => boolean): boolean;
+    find(pred: (item: T, index: number) => boolean): T | null;
     first(): T | null;
-    forEach(f: (item: T) => void): void;
+    forEach(f: (item: T, index: number) => void): void;
     isEmpty(): boolean;
-    some(pred: (item: T) => boolean): boolean;
+    some(pred: (item: T, index: number) => boolean): boolean;
     stringJoin(separator: string): string;
     toArray(): T[];
 
@@ -285,11 +285,11 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(COUNT_TRANSFORMER);
     }
 
-    public every(pred: (item: T) => boolean): boolean {
+    public every(pred: (item: T, index: number) => boolean): boolean {
         return this.remove(pred).isEmpty();
     }
 
-    public find(pred: (item: T) => boolean): T | null {
+    public find(pred: (item: T, index: number) => boolean): T | null {
         return this.filter(pred).first();
     }
 
@@ -297,7 +297,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(first<T>());
     }
 
-    public forEach(f: (item: T) => void): void {
+    public forEach(f: (item: T, index: number) => void): void {
         this.reduce(new ForEachTransformer(f));
     }
 
@@ -305,7 +305,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(IS_EMPTY_TRANFORMER);
     }
 
-    public some(pred: (item: T) => boolean): boolean {
+    public some(pred: (item: T, index: number) => boolean): boolean {
         return !this.filter(pred).isEmpty();
     }
 
@@ -553,7 +553,9 @@ function first<T>(): Transformer<T | null, T> {
 }
 
 class ForEachTransformer<T> implements Transformer<void, T> {
-    constructor(private readonly f: (input: T) => void) {}
+    private i = 0;
+
+    constructor(private readonly f: (input: T, index: number) => void) {}
 
     public ["@@transducer/init"]() {
         return undefined;
@@ -564,7 +566,7 @@ class ForEachTransformer<T> implements Transformer<void, T> {
     }
 
     public ["@@transducer/step"](_: void, input: T) {
-        return this.f(input);
+        return this.f(input, this.i++);
     }
 }
 

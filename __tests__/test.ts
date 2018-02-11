@@ -286,6 +286,13 @@ describe("every()", () => {
         expect(result).toEqual(false);
         expect(iterator.next().value).toEqual(4);
     });
+
+    it("should pass the index to the predicate as the second argument", () => {
+        const result1 = chainFrom([0, 1, 2, 3, 4]).every((n, i) => n === i);
+        const result2 = chainFrom([0, 1, 2, 4, 4]).every((n, i) => n === i);
+        expect(result1).toEqual(true);
+        expect(result2).toEqual(false);
+    });
 });
 
 describe("find()", () => {
@@ -306,6 +313,11 @@ describe("find()", () => {
         const result = chainFrom(iterator).map(x => 10 * x).find(x => x === 20);
         expect(result).toEqual(20);
         expect(iterator.next().value).toEqual(3);
+    });
+
+    it("should pass the index to the predicate as the second argument", () => {
+        const result = chainFrom([0, 1, 2, 10, 4]).find((x, i) => x !== i);
+        expect(result).toEqual(10);
     });
 });
 
@@ -336,6 +348,12 @@ describe("forEach()", () => {
         const result: number[] = [];
         chainFrom(input).map(s => s.length).forEach(n => result.push(n));
         expect(result).toEqual([1, 2, 3]);
+    });
+
+    it("should pass the index to the function as the second argument", () => {
+        const result: number[] = [];
+        chainFrom([10, 20, 30]).forEach((n, i) => result.push(n * i));
+        expect(result).toEqual([0, 20, 60]);
     });
 });
 
