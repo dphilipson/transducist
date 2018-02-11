@@ -446,7 +446,7 @@ export function reduced<T>(result: T): Reduced<T> {
     return t.reduced(result);
 }
 
-export function isReduced(result: any): result is Reduced<any> {
+export function isReduced<T>(result: T | Reduced<T>): result is Reduced<T> {
     return t.isReduced(result);
 }
 
@@ -513,7 +513,7 @@ function take<T>(n: number): Transducer<T, T> {
  * receive the index of each element as its second argument. Somewhat sketchy,
  * as it assumes that the underlying transducer calls the function on each
  * element in order exactly once, but in practice this happens for all
- * transducers in transducers.js, and if this ever changes our tests should
+ * transducers in transducers-js, and if this ever changes our tests should
  * catch it.
  */
 function withIndex<T = any, U = any, V = any>(

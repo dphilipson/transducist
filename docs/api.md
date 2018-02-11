@@ -72,6 +72,10 @@ transducer.
 Any number of these methods may be called on a chain to add transformations in
 sequence.
 
+All transformation methods which take a function as an argument, such as
+`.map()` and `filter()`, provide that function with the index of each element as
+the second argument, as is typical in JavaScript APIs.
+
 ### `.dedupe()`
 
 Removes elements that are equal to the proceeding element (using `===` for
@@ -232,6 +236,10 @@ library internally to implement all the others. For example usage, see the
 
 The following methods terminate a chain started with `chainFrom`, performing the
 calculations and producing a result.
+
+All below terminations which take a function as an argument, such as `.find()`
+and `.forEach()`, provide that predicate with the index of each element as the
+second argument, as is typical in JavaScript APIs.
 
 ### `.count()`
 
