@@ -1,8 +1,7 @@
 import * as t from "transducers-js";
 
-const ITERATOR_SYMBOL = typeof Symbol !== "undefined"
-    ? Symbol.iterator
-    : "@@iterator";
+const ITERATOR_SYMBOL =
+    typeof Symbol !== "undefined" ? Symbol.iterator : "@@iterator";
 
 // ----- Common transducer interfaces -----
 
@@ -202,7 +201,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public partitionAll(n: number): CombinedBuilder<TBase, T[]> {
-        return this.compose(t.partitionAll<T>(n));
+        return this.compose(t.partitionAll<any, T>(n));
     }
 
     public partitionBy(
@@ -256,7 +255,10 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         if (typeof transformer === "function") {
             const result: TResult = t.transduce<TResult, TBase, T>(
                 this.build(),
-                transformer,
+                // The transducer-js definitions don't understand that the
+                // reducer is allowed to return values of type Reduced<TResult>,
+                // hence the cast.
+                transformer as any,
                 initialValue,
                 this.collection,
             );
@@ -485,17 +487,17 @@ function interpose<T>(separator: T): Transducer<T, T> {
 // necessary.
 function take<T>(n: number): Transducer<T, T> {
     let i = 0;
-    return makeTransducer(<
-        R
-    >(reducer: QuittingReducer<R, T>, result: R, input: T) => {
-        if (i < n) {
-            i++;
-            const output = reducer(result, input);
-            return i === n ? t.ensureReduced(output) : output;
-        } else {
-            return t.reduced(result);
-        }
-    });
+    return makeTransducer(
+        <R>(reducer: QuittingReducer<R, T>, result: R, input: T) => {
+            if (i < n) {
+                i++;
+                const output = reducer(result, input);
+                return i === n ? t.ensureReduced(output) : output;
+            } else {
+                return t.reduced(result);
+            }
+        },
+    );
 }
 
 /**

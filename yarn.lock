@@ -14,6 +14,10 @@
   version "22.1.2"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-22.1.2.tgz#813a79ec98221633845627636dbc606f31220dbc"
 
+"@types/transducers-js@^0.4.4":
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/@types/transducers-js/-/transducers-js-0.4.4.tgz#50161496335e05810ac442c9f0a08788e4e82cec"
+
 abab@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/abab/-/abab-1.0.4.tgz#5faad9c2c07f60dd76770f71cf025b62a63cfd4e"
