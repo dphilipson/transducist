@@ -89,7 +89,11 @@ chainFrom([1, 2, 2, 3, 3, 3])
 
 ### `.drop(n)`
 
-Skips the first `n` elements. For example:
+Skips the first `n` elements. If there are fewer than `n` elements, then skip
+all of them. If `n` is negative, then leave the elements unchanged (same as
+`0`).
+
+For example:
 
 ```ts
 chainFrom([1, 2, 3, 4, 5])
@@ -158,8 +162,8 @@ chainFrom([1, 2, 3])
 ### `.partitionAll(n)`
 
 Groups elements into arrays of `n` elements. If the number of elements does not
-divide perfectly by `n`, the last array will have fewer than `n` elements. For
-example:
+divide perfectly by `n`, the last array will have fewer than `n` elements.
+Throws if `n` is nonpositive. jjFor example:
 
 ```ts
 chainFrom([1, 2, 3, 4, 5])
@@ -205,7 +209,9 @@ chainFrom([0, 1, null, 2, undefined, 3])
 
 Takes the first `n` elements and drops the rest. An essential opperation for
 efficiency, because it stops computations from occurring on more elements of the
-input than needed to produce `n` results. For example:
+input than needed to produce `n` results. If there are less than `n` elements,
+then leave all of them unchanged. If `n` is negative, then take none of them
+(same as `0`). For example:
 
 ```ts
 chainFrom([1, 2, 3, 4, 5])
@@ -216,7 +222,8 @@ chainFrom([1, 2, 3, 4, 5])
 ### `.takeNth(n)`
 
 Takes every `n`th element, starting from the first one. In other words, it takes
-the elements whose indices are multiples of `n`. For example:
+the elements whose indices are multiples of `n`. Throws if `n` is nonpositive.
+For example:
 
 ```ts
 chainFrom([1, 2, 3, 4, 5, 6])
@@ -426,7 +433,8 @@ incorrect type will be caught as an error by TypeScript.
 
 ### `toSum()`
 
-For a chain of numbers, return their sum. For example:
+For a chain of numbers, return their sum. If the input is empty, return `0`. For
+example:
 
 ```ts
 chainFrom(["a", "bb", "ccc"])
@@ -436,8 +444,8 @@ chainFrom(["a", "bb", "ccc"])
 
 ### `toAverage()`
 
-For a chain of numbers, return their average, or `NaN` if there are no elements.
-For example:
+For a chain of numbers, return their average, or `null` if there are no
+elements. For example:
 
 ```ts
 chainFrom(["a", "bb", "ccc"])
