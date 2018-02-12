@@ -149,6 +149,16 @@ chain and produces a result.
 Other terminating methods include `.forEach()`, `.count()`, and `.find()`, among
 others.
 
+All transforms and terminations which take a function as an argument, such as
+`.map()`, `.filter()`, and `.forEach()`, provide that function with the index of
+each element as the second argument, as is typical in JavaScript APIs. For
+example:
+```ts
+const result = chainFrom(["a", "bb", "ccc"])
+    .map((s, i) => s + i)
+    .toArray(); // -> ["a0", "bb1", "ccc2"]
+```
+
 For a list of all possible transformations and terminations, see the [full API
 docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api).
 

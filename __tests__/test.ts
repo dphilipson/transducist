@@ -63,6 +63,13 @@ describe("dropWhile()", () => {
             .toArray();
         expect(result).toEqual([3, 4, 5]);
     });
+
+    it("should pass the index to the predicate as the second argument", () => {
+        const result = chainFrom([0, 1, 2, 10, 4])
+            .dropWhile((n, i) => n === i)
+            .toArray();
+        expect(result).toEqual([10, 4]);
+    });
 });
 
 describe("filter()", () => {
@@ -72,6 +79,13 @@ describe("filter()", () => {
             .toArray();
         expect(result).toEqual([2, 4]);
     });
+
+    it("should pass the index to the predicate as the second argument", () => {
+        const result = chainFrom([0, 1, 2, 10, 4])
+            .filter((n, i) => n === i)
+            .toArray();
+        expect(result).toEqual([0, 1, 2, 4]);
+    });
 });
 
 describe("flatMap()", () => {
@@ -80,6 +94,13 @@ describe("flatMap()", () => {
             .flatMap(s => s.split(""))
             .toArray();
         expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
+    });
+
+    it("should pass the index to the function as the second argument", () => {
+        const result = chainFrom([10, 20, 30])
+            .flatMap((n, i) => [n, i])
+            .toArray();
+        expect(result).toEqual([10, 0, 20, 1, 30, 2]);
     });
 });
 
@@ -104,6 +125,13 @@ describe("keep()", () => {
             .toArray();
         expect(result).toEqual([true, true, false]);
     });
+
+    it("should pass the index to the function as the second argument", () => {
+        const result = chainFrom([0, 1, 2, 3, 4])
+            .keep((n, i) => (n % 2 === 0 ? n * i : null))
+            .toArray();
+        expect(result).toEqual([0, 4, 16]);
+    });
 });
 
 describe("map()", () => {
@@ -112,6 +140,11 @@ describe("map()", () => {
             .map(s => s.length)
             .toArray();
         expect(result).toEqual([1, 2, 3]);
+    });
+
+    it("should pass the index to the function as the second argument", () => {
+        const result = chainFrom([10, 10, 10]).map((x, i) => x * i).toArray();
+        expect(result).toEqual([0, 10, 20]);
     });
 });
 
@@ -129,6 +162,13 @@ describe("partitionBy()", () => {
             .toArray();
         expect(result).toEqual([["a", "b"], ["cc", "dd"], ["e"]]);
     });
+
+    it("should pass the index to the function as the second argument", () => {
+        const result = chainFrom([10, 9, 6, 5, 3, 1])
+            .partitionBy((n, i) => n + i)
+            .toArray();
+        expect(result).toEqual([[10, 9], [6, 5], [3], [1]]);
+    });
 });
 
 describe("remove()", () => {
@@ -137,6 +177,13 @@ describe("remove()", () => {
             .remove(n => n % 2 === 0)
             .toArray();
         expect(result).toEqual([1, 3, 5]);
+    });
+
+    it("should pass the index to the predicate as the second argument", () => {
+        const result = chainFrom([0, 1, 2, 10, 4])
+            .remove((n, i) => n === i)
+            .toArray();
+        expect(result).toEqual([10]);
     });
 });
 
@@ -167,6 +214,13 @@ describe("takeWhile()", () => {
             .takeWhile(n => n < 3)
             .toArray();
         expect(result).toEqual([1, 2]);
+    });
+
+    it("should pass the index to the predicate as the second argument", () => {
+        const result = chainFrom([0, 1, 2, 10, 4])
+            .takeWhile((n, i) => n === i)
+            .toArray();
+        expect(result).toEqual([0, 1, 2]);
     });
 });
 
@@ -232,6 +286,13 @@ describe("every()", () => {
         expect(result).toEqual(false);
         expect(iterator.next().value).toEqual(4);
     });
+
+    it("should pass the index to the predicate as the second argument", () => {
+        const result1 = chainFrom([0, 1, 2, 3, 4]).every((n, i) => n === i);
+        const result2 = chainFrom([0, 1, 2, 4, 4]).every((n, i) => n === i);
+        expect(result1).toEqual(true);
+        expect(result2).toEqual(false);
+    });
 });
 
 describe("find()", () => {
@@ -252,6 +313,11 @@ describe("find()", () => {
         const result = chainFrom(iterator).map(x => 10 * x).find(x => x === 20);
         expect(result).toEqual(20);
         expect(iterator.next().value).toEqual(3);
+    });
+
+    it("should pass the index to the predicate as the second argument", () => {
+        const result = chainFrom([0, 1, 2, 10, 4]).find((x, i) => x !== i);
+        expect(result).toEqual(10);
     });
 });
 
@@ -282,6 +348,12 @@ describe("forEach()", () => {
         const result: number[] = [];
         chainFrom(input).map(s => s.length).forEach(n => result.push(n));
         expect(result).toEqual([1, 2, 3]);
+    });
+
+    it("should pass the index to the function as the second argument", () => {
+        const result: number[] = [];
+        chainFrom([10, 20, 30]).forEach((n, i) => result.push(n * i));
+        expect(result).toEqual([0, 20, 60]);
     });
 });
 
