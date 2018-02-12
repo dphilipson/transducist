@@ -203,7 +203,13 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public partitionAll(n: number): CombinedBuilder<TBase, T[]> {
-        return this.compose(t.partitionAll<any, T>(n));
+        if (n === 0) {
+            throw new Error("Size in partitionAll() cannot be 0");
+        } else if (n < 0) {
+            throw new Error("Size in partitionAll() cannot be negative");
+        } else {
+            return this.compose(t.partitionAll<any, T>(n));
+        }
     }
 
     public partitionBy(
@@ -228,7 +234,13 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public takeNth(n: number): CombinedBuilder<TBase, T> {
-        return this.compose(t.takeNth<T>(n));
+        if (n === 0) {
+            throw new Error("Step in takeNth() cannot be 0");
+        } else if (n < 0) {
+            throw new Error("Step in takeNth() cannot be negative");
+        } else {
+            return this.compose(t.takeNth<T>(n));
+        }
     }
 
     public takeWhile(
@@ -406,7 +418,7 @@ class RangeIterator implements Iterator<number> {
 
     constructor(startOrEnd: number, end?: number, step?: number) {
         if (step === 0) {
-            throw new Error("Step in rangeIterator cannot be 0");
+            throw new Error("Step in rangeIterator() cannot be 0");
         } else if (end == null) {
             this.i = 0;
             this.end = startOrEnd;
@@ -592,12 +604,12 @@ class StringJoin implements CompletingTransformer<any[], string, any> {
 
 const AVERAGE_TRANSFORMER: CompletingTransformer<
     [number, number],
-    number,
+    number | null,
     number
 > = {
     ["@@transducer/init"]: () => [0, 0],
     ["@@transducer/result"]: (result: [number, number]) =>
-        result[0] / result[1],
+        result[1] === 0 ? null : result[0] / result[1],
     ["@@transducer/step"]: (result: [number, number], input: number) => {
         result[0] += input;
         result[1]++;
@@ -607,7 +619,7 @@ const AVERAGE_TRANSFORMER: CompletingTransformer<
 
 export function toAverage(): CompletingTransformer<
     [number, number],
-    number,
+    number | null,
     number
 > {
     return AVERAGE_TRANSFORMER;

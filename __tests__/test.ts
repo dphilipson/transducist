@@ -64,6 +64,27 @@ describe("drop()", () => {
             .toArray();
         expect(result).toEqual([3, 4, 5]);
     });
+
+    it("should drop everything if n is greater than the length", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .drop(7)
+            .toArray();
+        expect(result).toEqual([]);
+    });
+
+    it("should drop nothing if n is 0", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .drop(0)
+            .toArray();
+        expect(result).toEqual([1, 2, 3, 4, 5]);
+    });
+
+    it("should drop nothing if n is negative", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .drop(-2)
+            .toArray();
+        expect(result).toEqual([1, 2, 3, 4, 5]);
+    });
 });
 
 describe("dropWhile()", () => {
@@ -176,6 +197,18 @@ describe("partitionAll()", () => {
             .toArray();
         expect(result).toEqual([[1, 2], [3, 4], [5]]);
     });
+
+    it("should throw if n is 0", () => {
+        expect(() => chainFrom([1, 2, 3, 4, 5]).partitionAll(0)).toThrowError(
+            /0/,
+        );
+    });
+
+    it("should throw if n is negative", () => {
+        expect(() => chainFrom([1, 2, 3, 4, 5]).partitionAll(-2)).toThrowError(
+            /negative/,
+        );
+    });
 });
 
 describe("partitionBy()", () => {
@@ -212,10 +245,17 @@ describe("remove()", () => {
 
 describe("removeAbsent()", () => {
     it("should remove null and undefined elements", () => {
-        const result = chainFrom([0, 1, null, 2, undefined, 3])
+        const result = chainFrom([1, null, 2, undefined, 3])
             .removeAbsent()
             .toArray();
-        expect(result).toEqual([0, 1, 2, 3]);
+        expect(result).toEqual([1, 2, 3]);
+    });
+
+    it("should preserve other falsy elements", () => {
+        const result = chainFrom([false, null, 0, undefined, "", NaN])
+            .removeAbsent()
+            .toArray();
+        expect(result).toEqual([false, 0, "", NaN]);
     });
 });
 
@@ -235,6 +275,27 @@ describe("take()", () => {
         expect(result).toEqual([1, 2]);
         expect(iterator.next().value).toEqual(3);
     });
+
+    it("should take all elements if n is greater than length", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .take(7)
+            .toArray();
+        expect(result).toEqual([1, 2, 3, 4, 5]);
+    });
+
+    it("should return empty if n is 0", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .take(0)
+            .toArray();
+        expect(result).toEqual([]);
+    });
+
+    it("should return empty if n is negative", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .take(-2)
+            .toArray();
+        expect(result).toEqual([]);
+    });
 });
 
 describe("takeNth()", () => {
@@ -243,6 +304,16 @@ describe("takeNth()", () => {
             .takeNth(2)
             .toArray();
         expect(result).toEqual([1, 3, 5]);
+    });
+
+    it("should throw if n is 0", () => {
+        expect(() => chainFrom([1, 2, 3, 4, 5]).takeNth(0)).toThrow(/0/);
+    });
+
+    it("should throw if n is negative", () => {
+        expect(() => chainFrom([1, 2, 3, 4, 5]).takeNth(-2)).toThrow(
+            /negative/,
+        );
     });
 });
 
@@ -521,7 +592,7 @@ describe("toIterator()", () => {
         expect(iterator.next().value).toEqual(3);
     });
 
-    it("should work with mapcat()", () => {
+    it("should work with flatMap()", () => {
         // This tests that the iterator works with transducers that produce
         // multiple outputs for one input.
         const iterator = chainFrom(["a", "bb", "ccc"])
@@ -554,6 +625,11 @@ describe("toAverage()", () => {
         const result = chainFrom([1, 2, 3, 4, 5]).reduce(toAverage());
         expect(result).toEqual(3);
     });
+
+    it("should return null on empty input", () => {
+        const result = chainFrom([]).reduce(toAverage());
+        expect(result).toBeNull();
+    });
 });
 
 describe("toMax()", () => {
@@ -562,7 +638,7 @@ describe("toMax()", () => {
         expect(result).toEqual(5);
     });
 
-    it("should return null on no input", () => {
+    it("should return null on empty input", () => {
         const result = chainFrom([]).reduce(toMax());
         expect(result).toBeNull();
     });
@@ -584,7 +660,7 @@ describe("toMin()", () => {
         expect(result).toEqual(1);
     });
 
-    it("should return null on no input", () => {
+    it("should return null on empty input", () => {
         const result = chainFrom([]).reduce(toMin());
         expect(result).toBeNull();
     });
@@ -613,6 +689,11 @@ describe("toSum()", () => {
     it("should sum the elements", () => {
         const result = chainFrom([1, 2, 3, 4, 5]).reduce(toSum());
         expect(result).toEqual(15);
+    });
+
+    it("should return 0 on empty input", () => {
+        const result = chainFrom([]).reduce(toSum());
+        expect(result).toEqual(0);
     });
 });
 
