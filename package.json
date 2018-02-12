@@ -1,71 +1,62 @@
 {
-  "name": "transducist",
-  "version": "0.1.5",
-  "description": "Ergonomic JavaScript/TypeScript transducers for beginners and experts.",
-  "main": "dist/index.js",
-  "types": "dist/index",
-  "files": [
-    "dist/"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/dphilipson/transducist.git"
-  },
-  "homepage": "https://github.com/dphilipson/transducist",
-  "bugs": {
-    "url": "https://github.com/dphilipson/transducist/issues",
-    "email": "david.philipson@gmail.com"
-  },
-  "author": "David Philipson <david.philipson@gmail.com> (http://dphil.me)",
-  "license": "MIT",
-  "scripts": {
-    "build": "yarn run clean && tsc -p tsconfig.build.json",
-    "clean": "rm -rf dist/*",
-    "format": "yarn run format-glob -- 'src/**/*.{ts,tsx}'",
-    "format-glob": "prettier --tab-width 4 --trailing-comma all --write",
-    "generate-toc": "markdown-toc -i README.md && markdown-toc -i docs/*.md && true",
-    "jest": "jest",
-    "jest-watch": "yarn run jest -- --watch",
-    "lint": "tslint --project .",
-    "precommit": "lint-staged",
-    "prepare": "yarn run build",
-    "test": "yarn run lint && tsc && yarn run jest"
-  },
-  "jest": {
-    "transform": {
-      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    "name": "transducist",
+    "version": "0.1.5",
+    "description":
+        "Ergonomic JavaScript/TypeScript transducers for beginners and experts.",
+    "main": "dist/index.js",
+    "types": "dist/index",
+    "files": ["dist/"],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/dphilipson/transducist.git"
     },
-    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js"
-    ],
-    "mapCoverage": true
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "format-glob",
-      "yarn run lint -- --fix",
-      "git add"
-    ],
-    "*.md": [
-      "generate-toc",
-      "git add"
-    ]
-  },
-  "devDependencies": {
-    "@types/jest": "^20.0.0",
-    "husky": "^0.13.4",
-    "jest": "^20.0.4",
-    "lint-staged": "^3.6.1",
-    "markdown-toc": "^1.1.0",
-    "prettier": "^1.4.4",
-    "ts-jest": "^20.0.6",
-    "tslint": "^5.4.3",
-    "typescript": "^2.7.1"
-  },
-  "dependencies": {
-    "transducers-js": "^0.4.174"
-  }
+    "homepage": "https://github.com/dphilipson/transducist",
+    "bugs": {
+        "url": "https://github.com/dphilipson/transducist/issues",
+        "email": "david.philipson@gmail.com"
+    },
+    "author": "David Philipson <david.philipson@gmail.com> (http://dphil.me)",
+    "license": "MIT",
+    "scripts": {
+        "build": "yarn run clean && tsc -p tsconfig.build.json",
+        "clean": "rm -rf dist/*",
+        "format": "prettier --write",
+        "generate-toc":
+            "markdown-toc -i README.md && markdown-toc -i docs/*.md && true",
+        "jest": "jest",
+        "jest-watch": "yarn run jest --watch",
+        "lint": "tslint --project .",
+        "lint-fix": "yarn run lint --fix",
+        "precommit": "lint-staged",
+        "prepare": "yarn run build",
+        "test": "yarn run lint && tsc && yarn run jest"
+    },
+    "jest": {
+        "transform": {
+            ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+        },
+        "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+        "moduleFileExtensions": ["ts", "tsx", "js"],
+        "mapCoverage": true
+    },
+    "lint-staged": {
+        "*.json": ["format", "git add"],
+        "*.{ts,tsx}": ["lint-fix", "format", "git add"],
+        "*.md": ["generate-toc", "git add"]
+    },
+    "devDependencies": {
+        "@types/jest": "^22.1.2",
+        "husky": "^0.14.3",
+        "jest": "^22.2.2",
+        "lint-staged": "^6.1.0",
+        "markdown-toc": "^1.2.0",
+        "prettier": "^1.10.2",
+        "ts-jest": "^22.0.4",
+        "tslint": "^5.9.1",
+        "tslint-config-prettier": "^1.7.0",
+        "typescript": "^2.7.1"
+    },
+    "dependencies": {
+        "transducers-js": "^0.4.174"
+    }
 }
