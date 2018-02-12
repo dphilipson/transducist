@@ -41,6 +41,9 @@ export type Transformer<TResult, TInput> = CompletingTransformer<
     TInput
 >;
 
+// Courtesy of https://github.com/pelotom/type-zoo.
+export type NonNullable<T> = T & {};
+
 // ----- Library interfaces -----
 
 export interface TransformChain<T> {
@@ -52,11 +55,11 @@ export interface TransformChain<T> {
     filter(pred: (item: T, index: number) => boolean): TransformChain<T>;
     flatMap<U>(f: (item: T, index: number) => U[]): TransformChain<U>;
     interpose(separator: T): TransformChain<T>;
-    keep<U>(f: (item: T, index: number) => U | null | void): TransformChain<U>;
     map<U>(f: (item: T, index: number) => U): TransformChain<U>;
     partitionAll(n: number): TransformChain<T[]>;
     partitionBy(pred: (item: T, index: number) => any): TransformChain<T[]>;
     remove(pred: (item: T, index: number) => boolean): TransformChain<T>;
+    removeAbsent(): TransformChain<NonNullable<T>>;
     take(n: number): TransformChain<T>;
     takeNth(n: number): TransformChain<T>;
     takeWhile(pred: (item: T, index: number) => boolean): TransformChain<T>;
@@ -96,9 +99,6 @@ export interface TransducerBuilder<TBase, T> {
     ): TransducerBuilder<TBase, T>;
     flatMap<U>(f: (item: T, index: number) => U[]): TransducerBuilder<TBase, U>;
     interpose(separator: T): TransducerBuilder<TBase, T>;
-    keep<U>(
-        f: (item: T, index: number) => U | null | void,
-    ): TransducerBuilder<TBase, U>;
     map<U>(f: (item: T, index: number) => U): TransducerBuilder<TBase, U>;
     partitionAll(n: number): TransducerBuilder<TBase, T[]>;
     partitionBy(
@@ -107,6 +107,7 @@ export interface TransducerBuilder<TBase, T> {
     remove(
         pred: (item: T, index: number) => boolean,
     ): TransducerBuilder<TBase, T>;
+    removeAbsent(): TransducerBuilder<TBase, NonNullable<T>>;
     take(n: number): TransducerBuilder<TBase, T>;
     takeNth(n: number): TransducerBuilder<TBase, T>;
     takeWhile(
@@ -196,12 +197,6 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(interpose(separator));
     }
 
-    public keep<U>(
-        f: (item: T, index: number) => U | null | void,
-    ): CombinedBuilder<TBase, U> {
-        return this.compose(keep(f));
-    }
-
     public map<U>(f: (item: T, index: number) => U): CombinedBuilder<TBase, U> {
         return this.compose(mapWithIndex(f));
     }
@@ -220,6 +215,11 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
         return this.compose(removeWithIndex(pred));
+    }
+
+    public removeAbsent(): CombinedBuilder<TBase, NonNullable<T>> {
+        // Surprising that TypeScript is okay with this.
+        return this.remove(item => item == null);
     }
 
     public take(n: number): CombinedBuilder<TBase, T> {
@@ -478,15 +478,6 @@ function interpose<T>(separator: T): Transducer<T, T> {
             isStarted = true;
             return reducer(result, input);
         }
-    });
-}
-
-function keep<T, U>(
-    f: (item: T, index: number) => U | null | void,
-): Transducer<T, U> {
-    return makeTransducer((reducer, result, input, index) => {
-        const output = f(input, index);
-        return output == null ? result : reducer(result, output);
     });
 }
 
