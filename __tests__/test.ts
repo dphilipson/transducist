@@ -111,29 +111,6 @@ describe("interpose()", () => {
     });
 });
 
-describe("keep()", () => {
-    it("should map elements and keep non-nulls", () => {
-        const map: { [key: string]: boolean | null | undefined } = {
-            a: true,
-            b: null,
-            c: true,
-            d: undefined,
-            e: false,
-        };
-        const result = chainFrom(["a", "b", "c", "d", "e"])
-            .keep(s => map[s])
-            .toArray();
-        expect(result).toEqual([true, true, false]);
-    });
-
-    it("should pass the index to the function as the second argument", () => {
-        const result = chainFrom([0, 1, 2, 3, 4])
-            .keep((n, i) => (n % 2 === 0 ? n * i : null))
-            .toArray();
-        expect(result).toEqual([0, 4, 16]);
-    });
-});
-
 describe("map()", () => {
     it("should map over elements", () => {
         const result = chainFrom(["a", "bb", "ccc"])
@@ -184,6 +161,15 @@ describe("remove()", () => {
             .remove((n, i) => n === i)
             .toArray();
         expect(result).toEqual([10]);
+    });
+});
+
+describe("removeAbsent()", () => {
+    it("should remove null and undefined elements", () => {
+        const result = chainFrom([0, 1, null, 2, undefined, 3])
+            .removeAbsent()
+            .toArray();
+        expect(result).toEqual([0, 1, 2, 3]);
     });
 });
 

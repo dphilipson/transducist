@@ -14,11 +14,11 @@
   * [`.filter(pred)`](#filterpred)
   * [`.flatMap(f)`](#flatmapf)
   * [`.interpose(separator)`](#interposeseparator)
-  * [`.keep(f)`](#keepf)
   * [`.map(f)`](#mapf)
   * [`.partitionAll(n)`](#partitionalln)
   * [`.partitionBy(f)`](#partitionbyf)
   * [`.remove(pred)`](#removepred)
+  * [`.removeAbsent()`](#removeabsent)
   * [`.take(n)`](#taken)
   * [`.takeNth(n)`](#takenthn)
   * [`.takeWhile(pred)`](#takewhilepred)
@@ -139,16 +139,6 @@ chainFrom([1, 2, 3, 4, 5])
 // -> [1, 0, 2, 0, 3, 0, 4, 0, 5]
 ```
 
-### `.keep(f)`
-
-Transforms each element by applying `f` to it, but drops any elements for which
-`f` returns `null` or `undefined` (but not other falsy values). For example:
-```ts
-chainFrom([{a: 1}, {a: 2}, {b: 3}])
-    .keep(o => o.a)
-    .toArray(); // -> [1, 2]
-```
-
 ### `.map(f)`
 
 Transforms each element by applying `f` to it. For example:
@@ -188,6 +178,16 @@ Like `filter()`, but removes the elements matching `pred` instead. For example:
 chainFrom([1, 2, 3])
     .remove(x => x % 2 === 1)
     .toArray(); // -> [2, 4]
+```
+
+### `.removeAbsent()`
+
+Removes `null` and `undefined` elements (but not other falsy values). For
+example:
+```ts
+chainFrom([0, 1, null, 2, undefined, 3])
+    .removeAbsent()
+    .toArray(); // -> [0, 1, 2, 3]
 ```
 
 ### `.take(n)`
