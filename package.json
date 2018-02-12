@@ -21,8 +21,7 @@
         "build": "yarn run clean && tsc -p tsconfig.build.json",
         "clean": "rm -rf dist/*",
         "format": "prettier --write",
-        "generate-toc":
-            "markdown-toc -i README.md && markdown-toc -i docs/*.md && true",
+        "generate-toc": "markdown-toc -i",
         "jest": "jest",
         "jest-watch": "yarn run jest --watch",
         "lint": "tslint --project .",

@@ -504,7 +504,9 @@ from reducer to reducer instead. This helper allows transducers to be defined in
 terms of such a function, removing the boilerplate of defining
 `@@transducer/init`, etc. methods on a transformer.
 
-Note that the signature `reducer => reducer` expands to `reducer => (result, input) => result`, which after uncurrying becomes `(reducer, result, input) => result`, which is (almost) the actual type in the signature of this function.
+Note that the signature `reducer => reducer` expands to `reducer => (result,
+input) => result`, which after uncurrying becomes `(reducer, result, input) =>
+result`, which is (almost) the actual type in the signature of this function.
 
 Additionally, the function is provided the current index, to support creation of
 APIs similar to JavaScript's array transformation methods such as `.map()` and
