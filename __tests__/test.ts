@@ -15,8 +15,14 @@ describe("transformer chain", () => {
         const input = [1, 2, 3, 4, 5];
         const inc = (n: number) => n + 1;
         const isEven = (n: number) => n % 2 === 0;
-        const result1 = chainFrom(input).map(inc).filter(isEven).toArray();
-        const result2 = chainFrom(input).filter(isEven).map(inc).toArray();
+        const result1 = chainFrom(input)
+            .map(inc)
+            .filter(isEven)
+            .toArray();
+        const result2 = chainFrom(input)
+            .filter(isEven)
+            .map(inc)
+            .toArray();
         expect(result1).toEqual([2, 4, 6]);
         expect(result2).toEqual([3, 5]);
     });
@@ -44,14 +50,18 @@ describe("compose()", () => {
 
 describe("dedupe()", () => {
     it("should remove consecutive duplicates", () => {
-        const result = chainFrom([1, 2, 2, 3, 3, 3]).dedupe().toArray();
+        const result = chainFrom([1, 2, 2, 3, 3, 3])
+            .dedupe()
+            .toArray();
         expect(result).toEqual([1, 2, 3]);
     });
 });
 
 describe("drop()", () => {
     it("should drop the first n elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).drop(2).toArray();
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .drop(2)
+            .toArray();
         expect(result).toEqual([3, 4, 5]);
     });
 });
@@ -102,11 +112,43 @@ describe("flatMap()", () => {
             .toArray();
         expect(result).toEqual([10, 0, 20, 1, 30, 2]);
     });
+
+    it("should work when mapping to iterators", () => {
+        const result = chainFrom(["a", "bb", "ccc"])
+            .flatMap(s => rangeIterator(s.length))
+            .toArray();
+        expect(result).toEqual([0, 0, 1, 0, 1, 2]);
+    });
+
+    it("should work when mapping to strings", () => {
+        const result = chainFrom(["a", "bb", "ccc"])
+            .flatMap(s => s)
+            .toArray();
+        expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
+    });
+
+    it("should consume iterators only as much as necessary", () => {
+        const iterators = [
+            rangeIterator(3),
+            rangeIterator(3),
+            rangeIterator(3),
+        ];
+        const result = chainFrom([0, 1, 2])
+            .flatMap(n => iterators[n])
+            .take(5)
+            .toArray();
+        expect(result).toEqual([0, 1, 2, 0, 1]);
+        expect(iterators[0].next().done).toEqual(true);
+        expect(iterators[1].next().value).toEqual(2);
+        expect(iterators[2].next().value).toEqual(0);
+    });
 });
 
 describe("interpose()", () => {
     it("should insert the separator between elements", () => {
-        const result = chainFrom([1, 2, 3]).interpose(0).toArray();
+        const result = chainFrom([1, 2, 3])
+            .interpose(0)
+            .toArray();
         expect(result).toEqual([1, 0, 2, 0, 3]);
     });
 });
@@ -120,14 +162,18 @@ describe("map()", () => {
     });
 
     it("should pass the index to the function as the second argument", () => {
-        const result = chainFrom([10, 10, 10]).map((x, i) => x * i).toArray();
+        const result = chainFrom([10, 10, 10])
+            .map((x, i) => x * i)
+            .toArray();
         expect(result).toEqual([0, 10, 20]);
     });
 });
 
 describe("partitionAll()", () => {
     it("should group elements by the specified size", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).partitionAll(2).toArray();
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .partitionAll(2)
+            .toArray();
         expect(result).toEqual([[1, 2], [3, 4], [5]]);
     });
 });
@@ -175,13 +221,17 @@ describe("removeAbsent()", () => {
 
 describe("take()", () => {
     it("should take the first n elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).take(3).toArray();
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .take(3)
+            .toArray();
         expect(result).toEqual([1, 2, 3]);
     });
 
     it("should terminate after pulling n elements", () => {
         const iterator = rangeIterator(1, 5);
-        const result = chainFrom(iterator).take(2).toArray();
+        const result = chainFrom(iterator)
+            .take(2)
+            .toArray();
         expect(result).toEqual([1, 2]);
         expect(iterator.next().value).toEqual(3);
     });
@@ -189,7 +239,9 @@ describe("take()", () => {
 
 describe("takeNth()", () => {
     it("should take every nth element", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).takeNth(2).toArray();
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .takeNth(2)
+            .toArray();
         expect(result).toEqual([1, 3, 5]);
     });
 });
@@ -232,7 +284,9 @@ describe("reduce()", () => {
     });
 
     it("should use a transformer and no initial value", () => {
-        const result = chainFrom([1, 2, 3]).map(n => 2 * n).reduce(transformer);
+        const result = chainFrom([1, 2, 3])
+            .map(n => 2 * n)
+            .reduce(transformer);
         expect(result).toEqual([2, 4, 6]);
     });
 
@@ -246,7 +300,9 @@ describe("reduce()", () => {
 
 describe("count()", () => {
     it("should return the number of elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n < 3).count();
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n < 3)
+            .count();
         expect(result).toEqual(2);
     });
 });
@@ -268,7 +324,9 @@ describe("every()", () => {
 
     it("should short-circuit if a failure is found", () => {
         const iterator = rangeIterator(1, 5);
-        const result = chainFrom(iterator).map(n => 10 * n).every(n => n < 30);
+        const result = chainFrom(iterator)
+            .map(n => 10 * n)
+            .every(n => n < 30);
         expect(result).toEqual(false);
         expect(iterator.next().value).toEqual(4);
     });
@@ -290,13 +348,17 @@ describe("find()", () => {
     });
 
     it("should return null if there are no matching elements", () => {
-        const result = chainFrom(input).map(x => x * 2).find(x => x % 2 === 1);
+        const result = chainFrom(input)
+            .map(x => x * 2)
+            .find(x => x % 2 === 1);
         expect(result).toBeNull();
     });
 
     it("should terminate computation upon finding a match", () => {
         const iterator = rangeIterator(1, 5);
-        const result = chainFrom(iterator).map(x => 10 * x).find(x => x === 20);
+        const result = chainFrom(iterator)
+            .map(x => 10 * x)
+            .find(x => x === 20);
         expect(result).toEqual(20);
         expect(iterator.next().value).toEqual(3);
     });
@@ -311,18 +373,25 @@ describe("first()", () => {
     const input = [1, 2, 3, 4, 5];
 
     it("should return the first element if it exists", () => {
-        const result = chainFrom(input).map(x => 2 * x).drop(2).first();
+        const result = chainFrom(input)
+            .map(x => 2 * x)
+            .drop(2)
+            .first();
         expect(result).toEqual(6);
     });
 
     it("should return null if there are no elements", () => {
-        const result = chainFrom(input).filter(n => n > 10).first();
+        const result = chainFrom(input)
+            .filter(n => n > 10)
+            .first();
         expect(result).toBeNull();
     });
 
     it("should terminate computation", () => {
         const iterator = rangeIterator(1, 5);
-        const result = chainFrom(iterator).map(x => 10 * x).first();
+        const result = chainFrom(iterator)
+            .map(x => 10 * x)
+            .first();
         expect(result).toEqual(10);
         expect(iterator.next().value).toEqual(2);
     });
@@ -332,7 +401,9 @@ describe("forEach()", () => {
     it("should call the provided function on each input", () => {
         const input = ["a", "bb", "ccc"];
         const result: number[] = [];
-        chainFrom(input).map(s => s.length).forEach(n => result.push(n));
+        chainFrom(input)
+            .map(s => s.length)
+            .forEach(n => result.push(n));
         expect(result).toEqual([1, 2, 3]);
     });
 
@@ -345,7 +416,9 @@ describe("forEach()", () => {
 
 describe("isEmpty()", () => {
     it("should return true if there are no elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).filter(n => n > 10).isEmpty();
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n > 10)
+            .isEmpty();
         expect(result).toEqual(true);
     });
 
@@ -358,7 +431,9 @@ describe("isEmpty()", () => {
 
     it("should terminate after one element", () => {
         const iterator = rangeIterator(1, 5);
-        const result = chainFrom(iterator).map(n => 10 * n).isEmpty();
+        const result = chainFrom(iterator)
+            .map(n => 10 * n)
+            .isEmpty();
         expect(result).toEqual(false);
         expect(iterator.next().value).toEqual(2);
     });
@@ -381,7 +456,9 @@ describe("some()", () => {
 
     it("should short-circuit if a match is found", () => {
         const iterator = rangeIterator(1, 5);
-        const result = chainFrom(iterator).map(n => 10 * n).some(n => n === 30);
+        const result = chainFrom(iterator)
+            .map(n => 10 * n)
+            .some(n => n === 30);
         expect(result).toEqual(true);
         expect(iterator.next().value).toEqual(4);
     });
@@ -420,19 +497,25 @@ describe("toArray()", () => {
 
 describe("toIterator()", () => {
     it("should return an iterable whose @@iterator is itself", () => {
-        const iterator = chainFrom([1, 2, 3]).map(n => 2 * n).toIterator();
+        const iterator = chainFrom([1, 2, 3])
+            .map(n => 2 * n)
+            .toIterator();
         expect(iterator[Symbol.iterator]()).toBe(iterator);
     });
 
     it("should return an iterator of the elements", () => {
-        const iterator = chainFrom([1, 2, 3]).map(n => 2 * n).toIterator();
+        const iterator = chainFrom([1, 2, 3])
+            .map(n => 2 * n)
+            .toIterator();
         const result = Array.from(iterator);
         expect(result).toEqual([2, 4, 6]);
     });
 
     it("should respect early termination", () => {
         const iterator = rangeIterator(1, 5);
-        const truncatedIterator = chainFrom(iterator).take(2).toIterator();
+        const truncatedIterator = chainFrom(iterator)
+            .take(2)
+            .toIterator();
         const result = Array.from(truncatedIterator);
         expect(result).toEqual([1, 2]);
         expect(iterator.next().value).toEqual(3);
@@ -449,7 +532,9 @@ describe("toIterator()", () => {
     });
 
     it("should work when iterating strings", () => {
-        const iterator = chainFrom("hello").filter(c => c !== "l").toIterator();
+        const iterator = chainFrom("hello")
+            .filter(c => c !== "l")
+            .toIterator();
         const result = Array.from(iterator);
         expect(result).toEqual(["h", "e", "o"]);
     });

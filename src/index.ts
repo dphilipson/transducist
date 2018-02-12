@@ -52,7 +52,7 @@ export interface TransformChain<T> {
     drop(n: number): TransformChain<T>;
     dropWhile(pred: (item: T, index: number) => boolean): TransformChain<T>;
     filter(pred: (item: T, index: number) => boolean): TransformChain<T>;
-    flatMap<U>(f: (item: T, index: number) => U[]): TransformChain<U>;
+    flatMap<U>(f: (item: T, index: number) => Iterable<U>): TransformChain<U>;
     interpose(separator: T): TransformChain<T>;
     map<U>(f: (item: T, index: number) => U): TransformChain<U>;
     partitionAll(n: number): TransformChain<T[]>;
@@ -96,7 +96,9 @@ export interface TransducerBuilder<TBase, T> {
     filter(
         pred: (item: T, index: number) => boolean,
     ): TransducerBuilder<TBase, T>;
-    flatMap<U>(f: (item: T, index: number) => U[]): TransducerBuilder<TBase, U>;
+    flatMap<U>(
+        f: (item: T, index: number) => Iterable<U>,
+    ): TransducerBuilder<TBase, U>;
     interpose(separator: T): TransducerBuilder<TBase, T>;
     map<U>(f: (item: T, index: number) => U): TransducerBuilder<TBase, U>;
     partitionAll(n: number): TransducerBuilder<TBase, T[]>;
@@ -187,7 +189,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public flatMap<U>(
-        f: (item: T, index: number) => U[],
+        f: (item: T, index: number) => Iterable<U>,
     ): CombinedBuilder<TBase, U> {
         return this.compose(flatMapWithIndex(f));
     }

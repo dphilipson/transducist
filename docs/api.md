@@ -80,6 +80,7 @@ the second argument, as is typical in JavaScript APIs.
 
 Removes elements that are equal to the proceeding element (using `===` for
 equality). For example:
+
 ```ts
 chainFrom([1, 2, 2, 3, 3, 3])
     .dedupe()
@@ -89,6 +90,7 @@ chainFrom([1, 2, 2, 3, 3, 3])
 ### `.drop(n)`
 
 Skips the first `n` elements. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .drop(3)
@@ -98,6 +100,7 @@ chainFrom([1, 2, 3, 4, 5])
 ### `.dropWhile(pred)`
 
 Skips elements as long as the predicate `pred` holds. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .dropWhile(n => n < 3)
@@ -107,6 +110,7 @@ chainFrom([1, 2, 3, 4, 5])
 ### `.filter(pred)`
 
 Keeps only the elements matching the predicate `pred`. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4])
     .map(x => x % 2 === 1)
@@ -117,14 +121,15 @@ chainFrom([1, 2, 3, 4])
 
 For `f` a function which maps each element to an iterable, applies `f` to each
 element and concatenates the results. For example:
+
 ```ts
 const authors = [
     { name: "cbrontë", books: ["Jane Eyre", "Shirley"] },
     { name: "mshelley", books: ["Frankenstein"] },
-]
+];
 
 chainFrom(authors)
-    .mapcat(author => author.books)
+    .flatMap(author => author.books)
     .toArray();
 // -> ["Jane Eyre", "Shirley", "Frankenstein"]
 ```
@@ -132,6 +137,7 @@ chainFrom(authors)
 ### `.interpose(separator)`
 
 Inserts `separator` between each pair of elements. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .interpose(0)
@@ -142,6 +148,7 @@ chainFrom([1, 2, 3, 4, 5])
 ### `.map(f)`
 
 Transforms each element by applying `f` to it. For example:
+
 ```ts
 chainFrom([1, 2, 3])
     .map(x => x * 2)
@@ -153,6 +160,7 @@ chainFrom([1, 2, 3])
 Groups elements into arrays of `n` elements. If the number of elements does not
 divide perfectly by `n`, the last array will have fewer than `n` elements. For
 example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .partitionAll(2)
@@ -164,6 +172,7 @@ chainFrom([1, 2, 3, 4, 5])
 
 Groups consecutive elements for which `f` returns the same value (as determined
 by `===`) into arrays. For example:
+
 ```ts
 chainFrom(["a", "ab", "bc", "c", "cd", "cde"])
     .partitionBy(s => s[0])
@@ -174,6 +183,7 @@ chainFrom(["a", "ab", "bc", "c", "cd", "cde"])
 ### `.remove(pred)`
 
 Like `filter()`, but removes the elements matching `pred` instead. For example:
+
 ```ts
 chainFrom([1, 2, 3])
     .remove(x => x % 2 === 1)
@@ -184,6 +194,7 @@ chainFrom([1, 2, 3])
 
 Removes `null` and `undefined` elements (but not other falsy values). For
 example:
+
 ```ts
 chainFrom([0, 1, null, 2, undefined, 3])
     .removeAbsent()
@@ -195,6 +206,7 @@ chainFrom([0, 1, null, 2, undefined, 3])
 Takes the first `n` elements and drops the rest. An essential opperation for
 efficiency, because it stops computations from occurring on more elements of the
 input than needed to produce `n` results. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .take(3)
@@ -205,6 +217,7 @@ chainFrom([1, 2, 3, 4, 5])
 
 Takes every `n`th element, starting from the first one. In other words, it takes
 the elements whose indices are multiples of `n`. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5, 6])
     .takeNth(2)
@@ -216,6 +229,7 @@ chainFrom([1, 2, 3, 4, 5, 6])
 Takes elements as long as the predicate `pred` holds, then drops the rest. Like
 `take()`, stops unnecessary computations on elements after `pred` fails. For
 example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .takeWhile(n => n < 3)
@@ -244,6 +258,7 @@ second argument, as is typical in JavaScript APIs.
 ### `.count()`
 
 Returns the number of elements. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .filter(x => x % 2 === 1)
@@ -257,6 +272,7 @@ otherwise. Short-circuits computation once a failure is found. Note that this is
 equivalent to `.remove(pred).isEmpty()`.
 
 Example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .map(n => 10 * n)
@@ -274,6 +290,7 @@ Returns the first element of the result which satisfies the predicate `pred`, or
 `.filter(pred).first()`.
 
 Example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .map(x => x * 10)
@@ -287,6 +304,7 @@ elements. Short-circuits computation, so no more work is done than necessary to
 get the first element.
 
 Example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .map(x => x * 10)
@@ -297,6 +315,7 @@ chainFrom([1, 2, 3, 4, 5])
 
 Calls `f` on each element of the result, presumably for side-effects. For
 example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .map(x => x * 10)
@@ -307,6 +326,7 @@ chainFrom([1, 2, 3, 4, 5])
 ### `.isEmpty()`
 
 Returns `true` if there are any elements, else `false`. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .filter(n => n > 10)
@@ -324,26 +344,28 @@ otherwise. Short-circuits computation once a match is found. Note that this is
 equivalent to `.filter(pred).isEmpty() === false`.
 
 Example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .map(n => 10 * n)
     .some(n => n === 30); // -> true
 
 chainFrom([1, 2, 3, 4, 5])
-            .map(n => 10 * n)
-            .some(n => n === 1); // -> false
+    .map(n => 10 * n)
+    .some(n => n === 1); // -> false
 ```
-
 
 ### `.stringJoin(separator)`
 
 Returns a string obtained by concatenating the elements together as strings with
 the separator between them. For example:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .filter(n => n % 2 === 1)
     .stringJoin(" -> "); // -> "1 -> 3 -> 5"
 ```
+
 Not called `toString()` in order to avoid clashing with the `Object` prototype
 method.
 
@@ -358,6 +380,7 @@ iterator is read, and then only as many as needed to compute number of results
 requested. This is the primary way of reading results lazily.
 
 Example:
+
 ```ts
 const iterator = chainFrom([1, 2, 3, 4, 5])
     .map(x => x * 10)
@@ -376,11 +399,13 @@ This is the most general way to terminate a chain, and all the others (except
 for `toIterator`) are implemented using it.
 
 Example of using a plain function reducer:
+
 ```ts
 chainFrom([1, 2, 3, 4, 5])
     .map(x => x * 10)
     .reduce((acc, x) => acc + x, 0); // -> 150
 ```
+
 A handful of pre-made transformers are provided by this library to be used with
 `reduce()`. They are described in the next section.
 
@@ -402,6 +427,7 @@ incorrect type will be caught as an error by TypeScript.
 ### `toSum()`
 
 For a chain of numbers, return their sum. For example:
+
 ```ts
 chainFrom(["a", "bb", "ccc"])
     .map(s => s.length)
@@ -412,6 +438,7 @@ chainFrom(["a", "bb", "ccc"])
 
 For a chain of numbers, return their average, or `NaN` if there are no elements.
 For example:
+
 ```ts
 chainFrom(["a", "bb", "ccc"])
     .map(s => s.length)
@@ -425,6 +452,7 @@ provided, then this reducer may only be applied if the elements are numbers and
 uses the natural comparator. Returns `null` if there are no elements.
 
 Example:
+
 ```ts
 chainFrom(["a", "bb", "ccc"])
     .map(s => s.length)
@@ -438,6 +466,7 @@ provided, then this reducer may only be applied if the elements are numbers and
 uses the natural comparator. Returns `null` if there are no elements.
 
 Example:
+
 ```ts
 chainFrom(["a", "bb", "ccc"])
     .map(s => s.length)
@@ -450,6 +479,7 @@ For a chain of two element arrays, creates an object whose keys are the first
 element of each array and whose values are the second. The first element of each
 pair must be a string. Further, a type parameter must be provided to specify the
 type of the values. For example:
+
 ```ts
 chainFrom(["a", "bb", "ccc"])
     .map(s => [s, s.length])
@@ -474,9 +504,7 @@ from reducer to reducer instead. This helper allows transducers to be defined in
 terms of such a function, removing the boilerplate of defining
 `@@transducer/init`, etc. methods on a transformer.
 
-Note that the signature `reducer => reducer` expands to `reducer => (result,
-input) => result`, which after uncurrying becomes `(reducer, result, input) =>
-result`, which is (almost) the actual type in the signature of this function.
+Note that the signature `reducer => reducer` expands to `reducer => (result, input) => result`, which after uncurrying becomes `(reducer, result, input) => result`, which is (almost) the actual type in the signature of this function.
 
 Additionally, the function is provided the current index, to support creation of
 APIs similar to JavaScript's array transformation methods such as `.map()` and
@@ -486,6 +514,7 @@ function as a second argument.
 An example is given in the [Advanced
 Usage](https://github.com/dphilipson/typescript-transducers#using-custom-transducers)
 section of the readme, where
+
 ```ts
 function replace<T>(initial: T, replacement: T) {
     return makeTransducer((reducer, result, input) => {
@@ -494,18 +523,21 @@ function replace<T>(initial: T, replacement: T) {
     });
 }
 ```
+
 is equivalent to
+
 ```ts
 import {
     CompletingTransformer,
     Transducer,
     Transformer,
- } from "typescript-transducers";
+} from "typescript-transducers";
 
 function replace<T>(initial: T, replacement: T): Transducer<T, T> {
     return (xf: CompletingTransformer<T, any, T>) => ({
         ["@@transducer/init"]: () => xf["@@transducer/init"](),
-        ["@@transducer/result"]: (result: T) => xf["@@transducer/result"](result),
+        ["@@transducer/result"]: (result: T) =>
+            xf["@@transducer/result"](result),
         ["@@transducer/step"]: (result: T, input: T) => {
             const output = input === initial ? replacement : input;
             return xf["@@transducer/step"](result, output);
@@ -531,22 +563,22 @@ empty iterator.
 Throws an error if `step` is zero.
 
 Example:
+
 ```ts
 chainFrom(rangeIterator(3))
     .map(i => "String #" + i)
     .toArray(); // -> ["String #0", "String #1", "String#2"]
 
-chainFrom(rangeIterator(10, 15))
-    .toArray(); // -> [10, 11, 12, 13, 14]
+chainFrom(rangeIterator(10, 15)).toArray(); // -> [10, 11, 12, 13, 14]
 
-chainFrom(rangeIterator(10, 15, 2))
-    .toArray(); // -> [10, 12, 14]
+chainFrom(rangeIterator(10, 15, 2)).toArray(); // -> [10, 12, 14]
 
-chainFrom(rangeIterator(15, 10, -2))
-    .toArray(); // -> [15, 13, 11]
+chainFrom(rangeIterator(15, 10, -2)).toArray(); // -> [15, 13, 11]
 ```
+
 The iterator is lazy, so for example the following will return quickly and not
 use up all your memory:
+
 ```ts
 chainFrom(rangeIterator(1000000000000))
     .take(3)
