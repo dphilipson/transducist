@@ -10,6 +10,14 @@
         "type": "git",
         "url": "git://github.com/dphilipson/transducist.git"
     },
+    "keywords": [
+        "transducers",
+        "typescript",
+        "functional",
+        "iterators",
+        "lazy",
+        "chain"
+    ],
     "homepage": "https://github.com/dphilipson/transducist",
     "bugs": {
         "url": "https://github.com/dphilipson/transducist/issues",
