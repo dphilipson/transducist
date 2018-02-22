@@ -383,7 +383,7 @@ Returns an array of the results. See any of the above examples.
 ### `.toIterator()`
 
 Returns an iterator. Elements of the input iterator are not read until this
-iterator is read, and then only as many as needed to compute then number of
+iterator is read, and then only as many as needed to compute the number of
 results requested. This is the primary way of reading results lazily.
 
 Example:
