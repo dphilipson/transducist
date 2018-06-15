@@ -39,17 +39,6 @@
         "prepare": "yarn run build",
         "test": "yarn run lint && tsc && yarn run jest"
     },
-    "jest": {
-        "transform": {
-            ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
-        },
-        "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
-        "moduleFileExtensions": [
-            "ts",
-            "tsx",
-            "js"
-        ]
-    },
     "lint-staged": {
         "*.json": [
             "yarn run format",

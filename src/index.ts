@@ -166,37 +166,37 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     // ----- Composing transducers -----
 
     public dedupe(): CombinedBuilder<TBase, T> {
-        return this.compose(dedupe());
+        return this.compose(xf => new Dedupe(xf));
     }
 
     public drop(n: number): CombinedBuilder<TBase, T> {
-        return this.compose(drop(n));
+        return this.compose(xf => new Drop(xf, n));
     }
 
     public dropWhile(
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
-        return this.compose(dropWhile(pred));
+        return this.compose(xf => new DropWhile(xf, pred));
     }
 
     public filter(
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
-        return this.compose(filter(pred));
+        return this.compose(xf => new Filter(xf, pred));
     }
 
     public flatMap<U>(
         f: (item: T, index: number) => Iterable<U>,
     ): CombinedBuilder<TBase, U> {
-        return this.compose(flatMap(f));
+        return this.compose(xf => new FlatMap(xf, f));
     }
 
     public interpose(separator: T): CombinedBuilder<TBase, T> {
-        return this.compose(interpose(separator));
+        return this.compose(xf => new Interpose(xf, separator));
     }
 
     public map<U>(f: (item: T, index: number) => U): CombinedBuilder<TBase, U> {
-        return this.compose(map(f));
+        return this.compose(xf => new Map(xf, f));
     }
 
     public partitionAll(n: number): CombinedBuilder<TBase, T[]> {
@@ -217,7 +217,15 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     public remove(
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
-        return this.compose(filter((item, i) => !pred(item, i)));
+        // Optimization around V8's handling of function arity. Calling a
+        // function with a number of arguments different from its declared
+        // argument count comes with a performance penalty as high as 25% in
+        // some environments.
+        return this.filter(
+            pred.length > 1
+                ? (item, i) => !pred(item, i)
+                : item => !(pred as any)(item),
+        );
     }
 
     public removeAbsent(): CombinedBuilder<TBase, NonNullable<T>> {
@@ -226,7 +234,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public take(n: number): CombinedBuilder<TBase, T> {
-        return this.compose(take<T>(n));
+        return this.compose(xf => new Take(xf, n));
     }
 
     public takeNth(n: number): CombinedBuilder<TBase, T> {
@@ -235,13 +243,13 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         } else if (n < 0) {
             throw new Error("Step in takeNth() cannot be negative");
         }
-        return this.compose(filter((_, i) => i % n === 0));
+        return this.filter((_, i) => i % n === 0);
     }
 
     public takeWhile(
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
-        return this.compose(takeWhile(pred));
+        return this.compose(xf => new TakeWhile(xf, pred));
     }
 
     // ----- Reductions -----
@@ -530,74 +538,276 @@ function unreduced<T>(result: T | Reduced<T>): T {
 
 // ----- Transducers -----
 
-function dedupe<T>(): Transducer<T, T> {
-    let last: T | {} = {};
-    return makeTransducer((reducer, result, input) => {
-        if (input !== last) {
-            last = input;
-            return reducer(result, input);
+// It seems like there should be a way to factor out the repeated logic between
+// all of these transformer classes, but every attempt thus far has
+// significantly damaged performance. These functions are the bottleneck of the
+// code, so any added layers of indirection have a nontrivial perf cost.
+//
+// The transforms which provide the index as a second argument have an
+// optimization around V8's handling of function arity. Calling a function with
+// a number of arguments different from its declared argument count comes with a
+// performance penalty as high as 25% in some environments, so they check the
+// declared argument count of the function they are passed to decide whether to
+// give it an index or not.
+
+class Dedupe<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private last: TInput | {} = {};
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput
+        >,
+    ) {}
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        if (input !== this.last) {
+            this.last = input;
+            return this.xf["@@transducer/step"](result, input);
         } else {
             return result;
         }
-    });
+    }
 }
 
-function drop<T>(n: number): Transducer<T, T> {
-    return makeTransducer((reducer, result, input, i) => {
-        return i >= n ? reducer(result, input) : result;
-    });
+class Drop<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private i = 0;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput
+        >,
+        private readonly n: number,
+    ) {}
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        return this.i++ < this.n
+            ? result
+            : this.xf["@@transducer/step"](result, input);
+    }
 }
 
-function dropWhile<T>(pred: (item: T, i: number) => boolean): Transducer<T, T> {
-    let isDoneDropping = false;
-    return makeTransducer((reducer, result, input, i) => {
-        if (isDoneDropping) {
-            return reducer(result, input);
-        } else if (!pred(input, i)) {
-            isDoneDropping = true;
-            return reducer(result, input);
+class DropWhile<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private readonly needsIndex: boolean;
+    private isDoneDropping = false;
+    private i = 0;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput
+        >,
+        private readonly pred: (item: TInput, i: number) => boolean,
+    ) {
+        this.needsIndex = pred.length > 1;
+    }
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        if (this.isDoneDropping) {
+            return this.xf["@@transducer/step"](result, input);
         } else {
-            return result;
+            const meetsCondition = this.needsIndex
+                ? this.pred(input, this.i++)
+                : (this.pred as any)(input);
+            if (meetsCondition) {
+                return result;
+            } else {
+                this.isDoneDropping = true;
+                return this.xf["@@transducer/step"](result, input);
+            }
         }
-    });
+    }
 }
 
-function filter<T>(pred: (item: T, i: number) => boolean): Transducer<T, T> {
-    return makeTransducer(
-        (reducer, result, input, i) =>
-            pred(input, i) ? reducer(result, input) : result,
-    );
+class Filter<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private readonly needsIndex: boolean;
+    private i = 0;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput
+        >,
+        private readonly pred: (item: TInput, i: number) => boolean,
+    ) {
+        this.needsIndex = pred.length > 1;
+    }
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        const meetsCondition = this.needsIndex
+            ? this.pred(input, this.i++)
+            : (this.pred as any)(input);
+        return meetsCondition
+            ? this.xf["@@transducer/step"](result, input)
+            : result;
+    }
 }
 
-function flatMap<T, U>(
-    f: (item: T, i: number) => Iterable<U>,
-): Transducer<T, U> {
-    return makeTransducer((reducer, result, input, i) =>
-        reduceWithFunction(reducer, result, getIterator(f(input, i))),
-    );
+class FlatMap<TResult, TCompleteResult, TInput, TOutput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private readonly step: QuittingReducer<TResult, TOutput>;
+    private readonly needsIndex: boolean;
+    private i = 0;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TOutput
+        >,
+        private readonly f: (item: TInput, i: number) => Iterable<TOutput>,
+    ) {
+        this.step = xf["@@transducer/step"].bind(xf);
+        this.needsIndex = f.length > 1;
+    }
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        const iterable: Iterable<TOutput> = this.needsIndex
+            ? this.f(input, this.i++)
+            : (this.f as any)(input);
+        return reduceWithFunction(this.step, result, getIterator(iterable));
+    }
 }
 
-function interpose<T>(separator: T): Transducer<T, T> {
-    let isStarted = false;
-    return makeTransducer((reducer, result, input) => {
-        if (isStarted) {
-            const withSeparator = reducer(result, separator);
+class Interpose<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private isStarted = false;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput
+        >,
+        private readonly separator: TInput,
+    ) {}
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        if (this.isStarted) {
+            const withSeparator = this.xf["@@transducer/step"](
+                result,
+                this.separator,
+            );
             if (isReduced(withSeparator)) {
                 return withSeparator;
             } else {
-                return reducer(withSeparator, input);
+                return this.xf["@@transducer/step"](withSeparator, input);
             }
         } else {
-            isStarted = true;
-            return reducer(result, input);
+            this.isStarted = true;
+            return this.xf["@@transducer/step"](result, input);
         }
-    });
+    }
 }
 
-function map<T, U>(f: (item: T, i: number) => U): Transducer<T, U> {
-    return makeTransducer((reducer, result, input, i) =>
-        reducer(result, f(input, i)),
-    );
+class Map<TResult, TCompleteResult, TInput, TOutput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private readonly needsIndex: boolean;
+    private i = 0;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TOutput
+        >,
+        private readonly f: (item: TInput, i: number) => TOutput,
+    ) {
+        this.needsIndex = f.length > 1;
+    }
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        const mappedInput = this.needsIndex
+            ? this.f(input, this.i++)
+            : (this.f as any)(input);
+        return this.xf["@@transducer/step"](result, mappedInput);
+    }
 }
 
 class PartitionAll<TResult, TCompleteResult, TInput>
@@ -691,23 +901,75 @@ class PartitionBy<TResult, TCompleteResult, TInput>
     }
 }
 
-function take<T>(n: number): Transducer<T, T> {
-    return makeTransducer((reducer, result, input, i) => {
+class Take<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private i = 0;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput
+        >,
+        private readonly n: number,
+    ) {}
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
         // Written this way to avoid pulling one more element than necessary.
-        if (n <= 0) {
+        if (this.n <= 0) {
             return reduced(result);
         }
-        return i < n - 1
-            ? reducer(result, input)
-            : ensureReduced(reducer(result, input));
-    });
+        const next = this.xf["@@transducer/step"](result, input);
+        return this.i++ < this.n - 1 ? next : ensureReduced(next);
+    }
 }
 
-function takeWhile<T>(pred: (item: T, i: number) => boolean): Transducer<T, T> {
-    return makeTransducer(
-        (reducer, result, input, i) =>
-            pred(input, i) ? reducer(result, input) : reduced(result),
-    );
+class TakeWhile<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private readonly needsIndex: boolean;
+    private i = 0;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput
+        >,
+        private readonly pred: (item: TInput, i: number) => boolean,
+    ) {
+        this.needsIndex = pred.length > 1;
+    }
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        const meetsCondition = this.needsIndex
+            ? this.pred(input, this.i++)
+            : (this.pred as any)(input);
+        return meetsCondition
+            ? this.xf["@@transducer/step"](result, input)
+            : reduced(result);
+    }
 }
 
 // ----- Custom transformers -----
@@ -945,19 +1207,18 @@ function isObject(x: any): boolean {
 function getIterator<T>(collection: Iterable<T>): Iterator<T>;
 function getIterator<V>(object: Dictionary<V>): Iterator<[string, V]>;
 function getIterator(collection: any): Iterator<any> {
-    const anyCollection = collection as any;
-    if (anyCollection[ITERATOR_SYMBOL]) {
-        return anyCollection[ITERATOR_SYMBOL]();
-    } else if (Array.isArray(anyCollection)) {
-        return new ArrayIterator(anyCollection);
-    } else if (typeof anyCollection === "string") {
+    if (collection[ITERATOR_SYMBOL]) {
+        return collection[ITERATOR_SYMBOL]();
+    } else if (Array.isArray(collection)) {
+        return new ArrayIterator(collection);
+    } else if (typeof collection === "string") {
         // Treat a string like an array of chars.
-        return new ArrayIterator(anyCollection as any);
-    } else if (isObject(anyCollection)) {
+        return new ArrayIterator(collection as any);
+    } else if (isObject(collection)) {
         return new ArrayIterator(
-            Object.keys(anyCollection).map((key: string) => [
+            Object.keys(collection).map((key: string) => [
                 key,
-                anyCollection[key],
+                collection[key],
             ]),
         );
     } else {
