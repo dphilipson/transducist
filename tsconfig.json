@@ -1,21 +1,15 @@
 {
-  "compilerOptions": {
-    "lib": [
-      "es5",
-      "es2015.iterable"
-    ],
-    "module": "commonjs",
-    "noEmit": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "es5"
-  },
-  "include": [
-    "src/**/*",
-    "__tests__/**/*"
-  ]
+    "compilerOptions": {
+        "lib": ["es5", "es2015.iterable"],
+        "module": "commonjs",
+        "noEmit": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "es5"
+    },
+    "include": ["src/**/*", "__tests__/**/*"]
 }

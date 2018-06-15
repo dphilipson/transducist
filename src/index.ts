@@ -1,5 +1,3 @@
-import * as t from "transducers-js";
-
 const ITERATOR_SYMBOL =
     typeof Symbol !== "undefined" ? Symbol.iterator : "@@iterator";
 
@@ -133,12 +131,11 @@ export function chainFrom<V>(
     collection: Dictionary<V>,
 ): TransformChain<[string, V]>;
 export function chainFrom(collection: any): any {
-    // transduce() from transducers-js will handle object vs iterable.
-    return new TransducerChain(collection);
+    return new TransducerChain(getIterator(collection));
 }
 
 export function transducerBuilder<T>(): TransducerBuilder<T, T> {
-    return new TransducerChain<T, T>([]);
+    return new TransducerChain<T, T>(getIterator([]));
 }
 
 type CombinedBuilder<TBase, T> = TransformChain<T> &
@@ -147,7 +144,7 @@ type CombinedBuilder<TBase, T> = TransformChain<T> &
 class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     private readonly transducers: Array<Transducer<any, any>> = [];
 
-    constructor(private readonly collection: Iterable<TBase>) {}
+    constructor(private readonly iterator: Iterator<TBase>) {}
 
     public compose<U>(transducer: Transducer<T, U>): CombinedBuilder<TBase, U> {
         this.transducers.push(transducer);
@@ -169,29 +166,29 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     // ----- Composing transducers -----
 
     public dedupe(): CombinedBuilder<TBase, T> {
-        return this.compose(dedupe<T>());
+        return this.compose(dedupe());
     }
 
     public drop(n: number): CombinedBuilder<TBase, T> {
-        return this.compose(t.drop<T>(n));
+        return this.compose(drop(n));
     }
 
     public dropWhile(
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
-        return this.compose(dropWhileWithIndex(pred));
+        return this.compose(dropWhile(pred));
     }
 
     public filter(
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
-        return this.compose(filterWithIndex(pred));
+        return this.compose(filter(pred));
     }
 
     public flatMap<U>(
         f: (item: T, index: number) => Iterable<U>,
     ): CombinedBuilder<TBase, U> {
-        return this.compose(flatMapWithIndex(f));
+        return this.compose(flatMap(f));
     }
 
     public interpose(separator: T): CombinedBuilder<TBase, T> {
@@ -199,7 +196,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public map<U>(f: (item: T, index: number) => U): CombinedBuilder<TBase, U> {
-        return this.compose(mapWithIndex(f));
+        return this.compose(map(f));
     }
 
     public partitionAll(n: number): CombinedBuilder<TBase, T[]> {
@@ -207,21 +204,20 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
             throw new Error("Size in partitionAll() cannot be 0");
         } else if (n < 0) {
             throw new Error("Size in partitionAll() cannot be negative");
-        } else {
-            return this.compose(t.partitionAll<any, T>(n));
         }
+        return this.compose(xf => new PartitionAll(xf, n));
     }
 
     public partitionBy(
-        pred: (item: T, index: number) => any,
+        f: (item: T, index: number) => any,
     ): CombinedBuilder<TBase, T[]> {
-        return this.compose(partitionByWithIndex(pred));
+        return this.compose(xf => new PartitionBy(xf, f));
     }
 
     public remove(
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
-        return this.compose(removeWithIndex(pred));
+        return this.compose(filter((item, i) => !pred(item, i)));
     }
 
     public removeAbsent(): CombinedBuilder<TBase, NonNullable<T>> {
@@ -238,15 +234,14 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
             throw new Error("Step in takeNth() cannot be 0");
         } else if (n < 0) {
             throw new Error("Step in takeNth() cannot be negative");
-        } else {
-            return this.compose(t.takeNth<T>(n));
         }
+        return this.compose(filter((_, i) => i % n === 0));
     }
 
     public takeWhile(
         pred: (item: T, index: number) => boolean,
     ): CombinedBuilder<TBase, T> {
-        return this.compose(takeWhileWithIndex(pred));
+        return this.compose(takeWhile(pred));
     }
 
     // ----- Reductions -----
@@ -260,40 +255,32 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         initialValue?: TResult,
     ): TCompleteResult;
     public reduce<TResult, TCompleteResult>(
-        transformer:
+        reducerOrTransformer:
             | QuittingReducer<TResult, T>
             | CompletingTransformer<TResult, TCompleteResult, T>,
         initialValue: TResult,
     ): TCompleteResult {
-        // Need to contort the type system a bit to get this overload.
-        if (typeof transformer === "function") {
-            const result: TResult = t.transduce<TResult, TBase, T>(
-                this.build(),
-                // The transducer-js definitions don't understand that the
-                // reducer is allowed to return values of type Reduced<TResult>,
-                // hence the cast.
-                transformer as any,
-                initialValue,
-                this.collection,
+        if (typeof reducerOrTransformer === "function") {
+            const transformer = new ReducerWrappingTransformer(
+                reducerOrTransformer,
             );
-            // Safe because TResult and TCompleteResult are the same in this
-            // case.
-            return result as any;
+            // Cast is safe because TResult and TCompleteResult are the same in this case.
+            return transduceWithInitialValue(
+                this.build(),
+                transformer,
+                initialValue,
+                this.iterator,
+            ) as any;
+        } else if (arguments.length >= 2) {
+            // Initial value is provided.
+            return transduceWithInitialValue(
+                this.build(),
+                reducerOrTransformer,
+                initialValue,
+                this.iterator,
+            );
         } else {
-            if (initialValue === undefined) {
-                return t.transduce<TResult, TCompleteResult, TBase, T>(
-                    this.build(),
-                    transformer,
-                    this.collection,
-                );
-            } else {
-                return t.transduce<TResult, TCompleteResult, TBase, T>(
-                    this.build(),
-                    transformer,
-                    initialValue,
-                    this.collection,
-                );
-            }
+            return transduce(this.build(), reducerOrTransformer, this.iterator);
         }
     }
 
@@ -330,13 +317,13 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public toArray(): T[] {
-        return t.into([], this.build(), this.collection);
+        return this.reduce(TO_ARRAY_TRANSFORMER);
     }
 
     public toIterator(): IterableIterator<T> {
         const iterable: Iterator<T> = new TransducerIterable(
             this.build(),
-            getIterator(this.collection),
+            this.iterator,
         );
         // We can't satisfy the IterableIterator interface while functioning in
         // environments without Symbol, hence the cast.
@@ -346,9 +333,80 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
 // ----- Utility functions -----
 
-class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
-    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
-    private readonly step: QuittingReducer<TResult, TInput>;
+function transduce<TResult, TCompleteResult, TInput, TOutput>(
+    xf: Transducer<TInput, TOutput>,
+    f: CompletingTransformer<TResult, TCompleteResult, TOutput>,
+    iterator: Iterator<TInput>,
+): TCompleteResult {
+    return transduceWithInitialValue(xf, f, f["@@transducer/init"](), iterator);
+}
+
+function transduceWithInitialValue<TResult, TCompleteResult, TInput, TOutput>(
+    xf: Transducer<TInput, TOutput>,
+    f: CompletingTransformer<TResult, TCompleteResult, TOutput>,
+    initialValue: TResult,
+    iterator: Iterator<TInput>,
+): TCompleteResult {
+    return reduceWithTransformer(xf(f), initialValue, iterator);
+}
+
+function reduceWithTransformer<TResult, TCompleteResult, TInput>(
+    f: CompletingTransformer<TResult, TCompleteResult, TInput>,
+    initialValue: TResult,
+    iterator: Iterator<TInput>,
+): TCompleteResult {
+    const uncompleteResult = reduceWithFunction(
+        f["@@transducer/step"].bind(f),
+        initialValue,
+        iterator,
+    );
+    return f["@@transducer/result"](unreduced(uncompleteResult));
+}
+
+function reduceWithFunction<TResult, TInput>(
+    f: QuittingReducer<TResult, TInput>,
+    initialValue: TResult,
+    iterator: Iterator<TInput>,
+): TResult | Reduced<TResult> {
+    let result = initialValue;
+    while (true) {
+        const input = iterator.next();
+        if (input.done) {
+            return result;
+        }
+        const next = f(result, input.value);
+        if (isReduced(next)) {
+            return next;
+        } else {
+            result = next;
+        }
+    }
+}
+
+class ReducerWrappingTransformer<TResult, TInput>
+    implements Transformer<TResult, TInput> {
+    public readonly "@@transducer/step": QuittingReducer<TResult, TInput>;
+
+    constructor(f: QuittingReducer<TResult, TInput>) {
+        this["@@transducer/step"] = f;
+    }
+
+    public ["@@transducer/init"](): TResult | void {
+        return undefined;
+    }
+
+    public ["@@transducer/result"](result: TResult): TResult {
+        return result;
+    }
+}
+
+class ReducerOperatorApplyingTransformer<
+    TResult,
+    TCompleteResult,
+    TInput,
+    TOutput
+> implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    public readonly "@@transducer/step": QuittingReducer<TResult, TInput>;
 
     constructor(
         private readonly xf: CompletingTransformer<
@@ -360,7 +418,7 @@ class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
             reducer: QuittingReducer<TResult, TOutput>,
         ) => QuittingReducer<TResult, TInput>,
     ) {
-        this.step = f((result: TResult, input: TOutput) =>
+        this["@@transducer/step"] = f((result: TResult, input: TOutput) =>
             xf["@@transducer/step"](result, input),
         );
     }
@@ -371,13 +429,6 @@ class SimpleDelegatingTransformer<TResult, TCompleteResult, TInput, TOutput>
 
     public ["@@transducer/result"](result: TResult): TCompleteResult {
         return this.xf["@@transducer/result"](result);
-    }
-
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): TResult | Reduced<TResult> {
-        return this.step(result, input);
     }
 }
 
@@ -404,7 +455,7 @@ export function makeTransducer<T, U>(
 ): Transducer<T, U> {
     let i = 0;
     return <R>(xf: CompletingTransformer<R, any, U>) =>
-        new SimpleDelegatingTransformer(
+        new ReducerOperatorApplyingTransformer(
             xf,
             (reducer: QuittingReducer<R, U>) => (result: R, input: T) =>
                 f(reducer, result, input, i++),
@@ -459,14 +510,25 @@ export function rangeIterator(
 }
 
 export function reduced<T>(result: T): Reduced<T> {
-    return t.reduced(result);
+    return {
+        "@@transducer/reduced": true,
+        "@@transducer/value": result,
+    };
 }
 
 export function isReduced<T>(result: T | Reduced<T>): result is Reduced<T> {
-    return t.isReduced(result);
+    return result && (result as any)["@@transducer/reduced"] === true;
 }
 
-// ----- Custom transducers -----
+function ensureReduced<T>(result: T | Reduced<T>): Reduced<T> {
+    return isReduced(result) ? result : reduced(result);
+}
+
+function unreduced<T>(result: T | Reduced<T>): T {
+    return isReduced(result) ? result["@@transducer/value"] : result;
+}
+
+// ----- Transducers -----
 
 function dedupe<T>(): Transducer<T, T> {
     let last: T | {} = {};
@@ -478,6 +540,41 @@ function dedupe<T>(): Transducer<T, T> {
             return result;
         }
     });
+}
+
+function drop<T>(n: number): Transducer<T, T> {
+    return makeTransducer((reducer, result, input, i) => {
+        return i >= n ? reducer(result, input) : result;
+    });
+}
+
+function dropWhile<T>(pred: (item: T, i: number) => boolean): Transducer<T, T> {
+    let isDoneDropping = false;
+    return makeTransducer((reducer, result, input, i) => {
+        if (isDoneDropping) {
+            return reducer(result, input);
+        } else if (!pred(input, i)) {
+            isDoneDropping = true;
+            return reducer(result, input);
+        } else {
+            return result;
+        }
+    });
+}
+
+function filter<T>(pred: (item: T, i: number) => boolean): Transducer<T, T> {
+    return makeTransducer(
+        (reducer, result, input, i) =>
+            pred(input, i) ? reducer(result, input) : result,
+    );
+}
+
+function flatMap<T, U>(
+    f: (item: T, i: number) => Iterable<U>,
+): Transducer<T, U> {
+    return makeTransducer((reducer, result, input, i) =>
+        reduceWithFunction(reducer, result, getIterator(f(input, i))),
+    );
 }
 
 function interpose<T>(separator: T): Transducer<T, T> {
@@ -497,49 +594,121 @@ function interpose<T>(separator: T): Transducer<T, T> {
     });
 }
 
-// Don't use take() from transducers-js because it reads one more element than
-// necessary.
-function take<T>(n: number): Transducer<T, T> {
-    let i = 0;
-    return makeTransducer(
-        <R>(reducer: QuittingReducer<R, T>, result: R, input: T) => {
-            if (i < n) {
-                i++;
-                const output = reducer(result, input);
-                return i === n ? t.ensureReduced(output) : output;
-            } else {
-                return t.reduced(result);
-            }
-        },
+function map<T, U>(f: (item: T, i: number) => U): Transducer<T, U> {
+    return makeTransducer((reducer, result, input, i) =>
+        reducer(result, f(input, i)),
     );
 }
 
-/**
- * Helper function for wrapping a transducer which takes a single function (e.g.
- * `map()`, `filter()`, `takeWhile()`) such that the function it is passed will
- * receive the index of each element as its second argument. Somewhat sketchy,
- * as it assumes that the underlying transducer calls the function on each
- * element in order exactly once, but in practice this happens for all
- * transducers in transducers-js, and if this ever changes our tests should
- * catch it.
- */
-function withIndex<T = any, U = any, V = any>(
-    transducerFactory: (f: (item: T) => U) => Transducer<T, V>,
-): (f: (t: T, i: number) => U) => Transducer<T, V> {
-    return f => {
-        let i = 0;
-        const countingF = (item: T) => f(item, i++);
-        return transducerFactory(countingF);
-    };
+class PartitionAll<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private buffer: TInput[] = [];
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput[]
+        >,
+        private readonly n: number,
+    ) {}
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        if (this.buffer.length > 0) {
+            result = unreduced(
+                this.xf["@@transducer/step"](result, this.buffer),
+            );
+            this.buffer = [];
+        }
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        this.buffer.push(input);
+        if (this.buffer.length === this.n) {
+            const newResult = this.xf["@@transducer/step"](result, this.buffer);
+            this.buffer = [];
+            return newResult;
+        } else {
+            return result;
+        }
+    }
 }
 
-const dropWhileWithIndex = withIndex(t.dropWhile);
-const filterWithIndex = withIndex(t.filter);
-const flatMapWithIndex = withIndex<any, any, any>(t.mapcat);
-const mapWithIndex = withIndex(t.map);
-const partitionByWithIndex = withIndex(t.partitionBy);
-const removeWithIndex = withIndex(t.remove);
-const takeWhileWithIndex = withIndex(t.takeWhile);
+class PartitionBy<TResult, TCompleteResult, TInput>
+    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+    private buffer: TInput[] = [];
+    private lastValue: any;
+    private i = 0;
+
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput[]
+        >,
+        private readonly f: (item: TInput, i: number) => any,
+    ) {}
+
+    public ["@@transducer/init"](): TResult | void {
+        return this.xf["@@transducer/init"]();
+    }
+
+    public ["@@transducer/result"](result: TResult): TCompleteResult {
+        if (this.buffer.length > 0) {
+            result = unreduced(
+                this.xf["@@transducer/step"](result, this.buffer),
+            );
+            this.buffer = [];
+        }
+        return this.xf["@@transducer/result"](result);
+    }
+
+    public ["@@transducer/step"](
+        result: TResult,
+        input: TInput,
+    ): TResult | Reduced<TResult> {
+        const i = this.i++;
+        const value = this.f(input, i);
+        const lastValue = this.lastValue;
+        this.lastValue = value;
+        let newResult: TResult | Reduced<TResult>;
+        if (i === 0 || lastValue === value) {
+            newResult = result;
+        } else {
+            newResult = this.xf["@@transducer/step"](result, this.buffer);
+            this.buffer = [];
+        }
+        this.buffer.push(input);
+        return newResult;
+    }
+}
+
+function take<T>(n: number): Transducer<T, T> {
+    return makeTransducer((reducer, result, input, i) => {
+        // Written this way to avoid pulling one more element than necessary.
+        if (n <= 0) {
+            return reduced(result);
+        }
+        return i < n - 1
+            ? reducer(result, input)
+            : ensureReduced(reducer(result, input));
+    });
+}
+
+function takeWhile<T>(pred: (item: T, i: number) => boolean): Transducer<T, T> {
+    return makeTransducer(
+        (reducer, result, input, i) =>
+            pred(input, i) ? reducer(result, input) : reduced(result),
+    );
+}
 
 // ----- Custom transformers -----
 
@@ -552,7 +721,7 @@ const COUNT_TRANSFORMER: Transformer<number, any> = {
 const FIRST_TRANSFORMER: Transformer<any, any> = {
     ["@@transducer/init"]: () => null,
     ["@@transducer/result"]: (result: any) => result,
-    ["@@transducer/step"]: (_: any, input: any) => t.reduced(input),
+    ["@@transducer/step"]: (_: any, input: any) => reduced(input),
 };
 
 function first<T>(): Transformer<T | null, T> {
@@ -580,7 +749,7 @@ class ForEachTransformer<T> implements Transformer<void, T> {
 const IS_EMPTY_TRANFORMER: Transformer<boolean, any> = {
     ["@@transducer/init"]: () => true,
     ["@@transducer/result"]: (result: boolean) => result,
-    ["@@transducer/step"]: () => t.reduced(false),
+    ["@@transducer/step"]: () => reduced(false),
 };
 
 class StringJoin implements CompletingTransformer<any[], string, any> {
@@ -746,14 +915,15 @@ class TransducerIterable<TInput, TOutput> implements Iterator<TOutput> {
                 if (done) {
                     return { done } as any;
                 } else {
-                    const outValues = this.xfToArray["@@transducer/step"](
+                    let outValues = this.xfToArray["@@transducer/step"](
                         [],
                         value,
                     );
                     if (isReduced(outValues)) {
                         this.hasSeenEnd = true;
+                        outValues = outValues["@@transducer/value"];
                     }
-                    this.upcoming = new ArrayIterator(t.unreduced(outValues));
+                    this.upcoming = new ArrayIterator(outValues);
                 }
             }
         }
@@ -781,7 +951,8 @@ function getIterator(collection: any): Iterator<any> {
     } else if (Array.isArray(anyCollection)) {
         return new ArrayIterator(anyCollection);
     } else if (typeof anyCollection === "string") {
-        return new ArrayIterator(anyCollection.split("")) as any;
+        // Treat a string like an array of chars.
+        return new ArrayIterator(anyCollection as any);
     } else if (isObject(anyCollection)) {
         return new ArrayIterator(
             Object.keys(anyCollection).map((key: string) => [

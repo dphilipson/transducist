@@ -1,4 +1,3 @@
-import * as t from "transducers-js";
 import {
     chainFrom,
     rangeIterator,
@@ -8,6 +7,7 @@ import {
     toObject,
     toSum,
     transducerBuilder,
+    Transformer,
 } from "../src/index";
 
 describe("transformer chain", () => {
@@ -41,8 +41,11 @@ describe("transformer chain", () => {
 
 describe("compose()", () => {
     it("should apply the specified transform", () => {
+        const transducer = transducerBuilder<string>()
+            .map(s => s.length)
+            .build();
         const result = chainFrom(["a", "bb", "ccc"])
-            .compose(t.map((s: string) => s.length))
+            .compose(transducer)
             .toArray();
         expect(result).toEqual([1, 2, 3]);
     });
@@ -331,6 +334,15 @@ describe("takeWhile()", () => {
             .toArray();
         expect(result).toEqual([0, 1, 2]);
     });
+
+    it("should terminate after the predicate fails", () => {
+        const iterator = rangeIterator(1, 5);
+        const result = chainFrom(iterator)
+            .takeWhile(n => n < 3)
+            .toArray();
+        expect(result).toEqual([1, 2]);
+        expect(iterator.next().value).toEqual(4);
+    });
 });
 
 // ----- Reductions -----
@@ -341,7 +353,7 @@ describe("reduce()", () => {
         return array;
     };
 
-    const transformer: t.Transformer<number[], number> = {
+    const transformer: Transformer<number[], number> = {
         ["@@transducer/init"]: () => [],
         ["@@transducer/result"]: x => x,
         ["@@transducer/step"]: aPush,
@@ -700,7 +712,9 @@ describe("toSum()", () => {
 describe("transducer builder", () => {
     it("should return the identity if no transforms provided", () => {
         const transducer = transducerBuilder<number>().build();
-        const result = t.into([], transducer, [1, 2, 3]);
+        const result = chainFrom([1, 2, 3])
+            .compose(transducer)
+            .toArray();
         expect(result).toEqual([1, 2, 3]);
     });
 
@@ -709,7 +723,9 @@ describe("transducer builder", () => {
             .map(x => x + 1)
             .filter(x => x % 2 === 0)
             .build();
-        const result = t.into([], transducer, [1, 2, 3, 4, 5]);
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .compose(transducer)
+            .toArray();
         expect(result).toEqual([2, 4, 6]);
     });
 });

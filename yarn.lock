@@ -14,10 +14,6 @@
   version "22.1.2"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-22.1.2.tgz#813a79ec98221633845627636dbc606f31220dbc"
 
-"@types/transducers-js@^0.4.4":
-  version "0.4.4"
-  resolved "https://registry.yarnpkg.com/@types/transducers-js/-/transducers-js-0.4.4.tgz#50161496335e05810ac442c9f0a08788e4e82cec"
-
 abab@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/abab/-/abab-1.0.4.tgz#5faad9c2c07f60dd76770f71cf025b62a63cfd4e"
@@ -3143,10 +3139,6 @@ tr46@^1.0.0:
   resolved "https://registry.yarnpkg.com/tr46/-/tr46-1.0.1.tgz#a8b13fd6bfd2489519674ccde55ba3693b706d09"
   dependencies:
     punycode "^2.1.0"
-
-transducers-js@^0.4.174:
-  version "0.4.174"
-  resolved "https://registry.yarnpkg.com/transducers-js/-/transducers-js-0.4.174.tgz#d5862c10eff4be3d3322abf6bb742e30f1bb6fc4"
 
 trim-right@^1.0.1:
   version "1.0.1"

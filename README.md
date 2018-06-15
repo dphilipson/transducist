@@ -40,11 +40,10 @@ and work stops early once 100 people are found.
 
 You might be thinking that this looks very similar to [chains in
 Lodash](https://lodash.com/docs/4.17.4#chain) or various other libraries that
-offer a similar API. But this library is different because it's built on top of
-[transducers-js](https://github.com/cognitect-labs/transducers-js) and exposes
-all the benefits of using transducers, such as being able to easily add new
-transformation types to the middle of a chain and producing logic applicable to
-any data structure, not just arrays.
+offer a similar API. But this library is different because it's implemented with
+transducers and exposes all the benefits of using transducers, such as being
+able to easily add new transformation types to the middle of a chain and
+producing logic applicable to any data structure, not just arrays.
 
 Never heard of a transducer? Check the links in the
 [transducers-js](https://github.com/cognitect-labs/transducers-js#transducers-js)
