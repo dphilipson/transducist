@@ -1,11 +1,12 @@
 {
     "name": "transducist",
     "version": "0.3.1",
-    "description":
-        "Ergonomic JavaScript/TypeScript transducers for beginners and experts.",
+    "description": "Ergonomic JavaScript/TypeScript transducers for beginners and experts.",
     "main": "dist/index.js",
     "types": "dist/index",
-    "files": ["dist/"],
+    "files": [
+        "dist/"
+    ],
     "repository": {
         "type": "git",
         "url": "git://github.com/dphilipson/transducist.git"
@@ -43,25 +44,38 @@
             ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
         },
         "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
-        "moduleFileExtensions": ["ts", "tsx", "js"],
-        "mapCoverage": true
+        "moduleFileExtensions": [
+            "ts",
+            "tsx",
+            "js"
+        ]
     },
     "lint-staged": {
-        "*.json": ["format", "git add"],
-        "*.{ts,tsx}": ["lint-fix", "format", "git add"],
-        "*.md": ["generate-toc", "git add"]
+        "*.json": [
+            "yarn run format",
+            "git add"
+        ],
+        "*.{ts,tsx}": [
+            "yarn run lint-fix",
+            "yarn run format",
+            "git add"
+        ],
+        "*.md": [
+            "yarn run generate-toc",
+            "git add"
+        ]
     },
     "devDependencies": {
-        "@types/jest": "^22.1.2",
+        "@types/jest": "^23.1.0",
         "husky": "^0.14.3",
-        "jest": "^22.2.2",
-        "lint-staged": "^6.1.0",
+        "jest": "^23.1.0",
+        "lint-staged": "^7.2.0",
         "markdown-toc": "^1.2.0",
-        "prettier": "^1.10.2",
-        "ts-jest": "^22.0.4",
-        "tslint": "^5.9.1",
-        "tslint-config-prettier": "^1.7.0",
-        "typescript": "^2.7.1"
+        "prettier": "^1.13.5",
+        "ts-jest": "^22.4.6",
+        "tslint": "^5.10.0",
+        "tslint-config-prettier": "^1.13.0",
+        "typescript": "^2.9.2"
     },
     "dependencies": {}
 }
