@@ -130,7 +130,7 @@ Import with
 import { chainFrom } from "transducist";
 ```
 Start a chain by calling `chainFrom()` on any iterable, including an array or a
-string (or an object, see the full [API](#api)).
+string.
 ```ts
 const result = chainFrom(["a", "bb", "ccc", "dddd", "eeeee"])
 ```

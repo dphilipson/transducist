@@ -7,6 +7,7 @@
     "files": [
         "dist/"
     ],
+    "sideEffects": false,
     "repository": {
         "type": "git",
         "url": "git://github.com/dphilipson/transducist.git"
@@ -27,10 +28,10 @@
     "author": "David Philipson <david.philipson@gmail.com> (http://dphil.me)",
     "license": "MIT",
     "scripts": {
-        "build": "yarn run clean && tsc -p tsconfig.build.json",
+        "build": "yarn run clean && tsc -p tsconfig.build.json && ./markClassesPure.sh",
         "clean": "rm -rf dist/*",
         "format": "prettier --write",
-        "generate-toc": "markdown-toc -i",
+        "generate-toc": "markdown-toc -i *.md && true",
         "jest": "jest",
         "jest-watch": "yarn run jest --watch",
         "lint": "tslint --project .",
@@ -50,7 +51,7 @@
             "git add"
         ],
         "*.md": [
-            "yarn run generate-toc",
+            "yarn generate-toc",
             "git add"
         ]
     },

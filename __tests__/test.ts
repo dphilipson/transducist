@@ -26,15 +26,6 @@ describe("transformer chain", () => {
         expect(result1).toEqual([2, 4, 6]);
         expect(result2).toEqual([3, 5]);
     });
-
-    it("should iterate over key-value pairs for objects", () => {
-        const input = { a: 1, b: 2, c: 3 };
-        const result = chainFrom(input)
-            .filter(([key, value]) => key === "b" || value === 3)
-            .toArray();
-        expect(result).toContainEqual(["b", 2]);
-        expect(result).toContainEqual(["c", 3]);
-    });
 });
 
 // ----- Transformations -----
@@ -522,6 +513,22 @@ describe("isEmpty()", () => {
     });
 });
 
+describe("joinToString()", () => {
+    it("should concatenate the elements into a string with the separator", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 1)
+            .joinToString(" -> ");
+        expect(result).toEqual("1 -> 3 -> 5");
+    });
+
+    it("should work if the separator is the empty string", () => {
+        const result = chainFrom([1, 2, 3, 4, 5])
+            .filter(n => n % 2 === 1)
+            .joinToString("");
+        expect(result).toEqual("135");
+    });
+});
+
 describe("some()", () => {
     it("should return true if any element matches the predicate", () => {
         const result = chainFrom([1, 2, 3, 4, 5])
@@ -544,22 +551,6 @@ describe("some()", () => {
             .some(n => n === 30);
         expect(result).toEqual(true);
         expect(iterator.next().value).toEqual(4);
-    });
-});
-
-describe("stringJoin()", () => {
-    it("should concatenate the elements into a string with the separator", () => {
-        const result = chainFrom([1, 2, 3, 4, 5])
-            .filter(n => n % 2 === 1)
-            .stringJoin(" -> ");
-        expect(result).toEqual("1 -> 3 -> 5");
-    });
-
-    it("should work if the separator is the empty string", () => {
-        const result = chainFrom([1, 2, 3, 4, 5])
-            .filter(n => n % 2 === 1)
-            .stringJoin("");
-        expect(result).toEqual("135");
     });
 });
 
@@ -621,15 +612,6 @@ describe("toIterator()", () => {
         const result = Array.from(iterator);
         expect(result).toEqual(["h", "e", "o"]);
     });
-
-    it("should work when iterating objects", () => {
-        const iterator = chainFrom({ a: 1, b: 2, c: 3 })
-            .filter(([key, value]) => key === "b" || value === 3)
-            .toIterator();
-        const result = Array.from(iterator);
-        expect(result).toContainEqual(["b", 2]);
-        expect(result).toContainEqual(["c", 3]);
-    });
 });
 
 describe("toAverage()", () => {
@@ -656,7 +638,7 @@ describe("toMax()", () => {
     });
 
     it("should use the comparator if provided", () => {
-        const result = chainFrom({ a: 2, b: 1, c: 3 }).reduce(
+        const result = chainFrom([["a", 2], ["b", 1], ["c", 3]]).reduce(
             toMax(
                 (a: [string, number], b: [string, number]) =>
                     a[1] < b[1] ? -1 : 1,
@@ -678,7 +660,7 @@ describe("toMin()", () => {
     });
 
     it("should use the comparator if provided", () => {
-        const result = chainFrom({ a: 2, b: 1, c: 3 }).reduce(
+        const result = chainFrom([["a", 2], ["b", 1], ["c", 3]]).reduce(
             toMin(
                 (a: [string, number], b: [string, number]) =>
                     a[1] < b[1] ? -1 : 1,

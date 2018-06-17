@@ -30,8 +30,8 @@
   * [`.first()`](#first)
   * [`.forEach(f)`](#foreachf)
   * [`.isEmpty()`](#isempty)
+  * [`.joinToString(separator)`](#jointostringseparator)
   * [`.some(pred)`](#somepred)
-  * [`.stringJoin(separator)`](#stringjoinseparator)
   * [`.toArray()`](#toarray)
   * [`.toIterator()`](#toiterator)
   * [`.reduce(reducer, intialValue?)`](#reducereducer-intialvalue)
@@ -57,9 +57,8 @@ Starts a chain. Any number of transformation methods may be added, after which a
 termination method should be called to produce a result. No computation is done
 until a termination method is called.
 
-The argument may be any iterable, including an array or a string. The argument
-may also be an object, in which case it is treated as an iterable of key-value
-pairs, each a two element array.
+The argument may be any iterable, including an array or a string. This is back
+compatible with older browsers which did not implement the `Iterable` interface.
 
 ### `transducerBuilder()`
 
@@ -344,6 +343,20 @@ chainFrom([1, 2, 3, 4, 5])
     .isEmpty(); // -> false
 ```
 
+### `.joinToString(separator)`
+
+Returns a string obtained by concatenating the elements together as strings with
+the separator between them. For example:
+
+```ts
+chainFrom([1, 2, 3, 4, 5])
+    .filter(n => n % 2 === 1)
+    .joinToString(" -> "); // -> "1 -> 3 -> 5"
+```
+
+Not called `toString()` in order to avoid clashing with the `Object` prototype
+method.
+
 ### `.some(pred)`
 
 Returns `true` if any element satisfies the predicate `pred`, or `false`
@@ -361,20 +374,6 @@ chainFrom([1, 2, 3, 4, 5])
     .map(n => 10 * n)
     .some(n => n === 1); // -> false
 ```
-
-### `.stringJoin(separator)`
-
-Returns a string obtained by concatenating the elements together as strings with
-the separator between them. For example:
-
-```ts
-chainFrom([1, 2, 3, 4, 5])
-    .filter(n => n % 2 === 1)
-    .stringJoin(" -> "); // -> "1 -> 3 -> 5"
-```
-
-Not called `toString()` in order to avoid clashing with the `Object` prototype
-method.
 
 ### `.toArray()`
 
