@@ -10,6 +10,7 @@ import {
     joinToString,
     some,
     toArray,
+    toObject,
 } from "./reducers";
 import {
     dedupe,
@@ -52,7 +53,6 @@ export interface TransformChain<T> {
     ): TResult;
     reduce<TResult, TCompleteResult>(
         transformer: CompletingTransformer<TResult, TCompleteResult, T>,
-        initialValue?: TResult,
     ): TCompleteResult;
 
     count(): number;
@@ -64,6 +64,10 @@ export interface TransformChain<T> {
     joinToString(separator: string): string;
     some(pred: (item: T, index: number) => boolean): boolean;
     toArray(): T[];
+    toObject<U>(
+        getKey: (item: T, index: number) => string,
+        getValue: (item: T, index: number) => U,
+    ): { [key: string]: U };
 
     toIterator(): IterableIterator<T>;
 }
@@ -213,15 +217,25 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     ): TResult;
     public reduce<TResult, TCompleteResult>(
         reducer: CompletingTransformer<TResult, TCompleteResult, T>,
-        initialValue?: TResult,
     ): TCompleteResult;
     public reduce<TResult, TCompleteResult>(
-        reducer: any,
+        reducer:
+            | QuittingReducer<TResult, T>
+            | CompletingTransformer<TResult, TCompleteResult, T>,
         initialValue?: TResult,
     ): TCompleteResult {
-        return arguments.length > 1
-            ? transduce(this.collection, this.build(), reducer, initialValue)
-            : (transduce(this.collection, this.build(), reducer) as any);
+        if (typeof reducer === "function") {
+            // Type coercion because in this branch, TResult and TCompleteResult are
+            // the same, but the checker doesn't know that.
+            return transduce(
+                this.collection,
+                this.build(),
+                reducer,
+                initialValue!,
+            ) as any;
+        } else {
+            return transduce(this.collection, this.build(), reducer);
+        }
     }
 
     public count(): number {
@@ -258,6 +272,13 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
     public toArray(): T[] {
         return this.reduce(toArray());
+    }
+
+    public toObject<U>(
+        getKey: (item: T, index: number) => string,
+        getValue: (item: T, index: number) => U,
+    ): { [key: string]: U } {
+        return this.reduce(toObject(getKey, getValue));
     }
 
     public toIterator(): IterableIterator<T> {

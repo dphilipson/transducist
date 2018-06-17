@@ -4,7 +4,6 @@ import {
     toAverage,
     toMax,
     toMin,
-    toObject,
     toSum,
     transducerBuilder,
     Transformer,
@@ -363,13 +362,6 @@ describe("reduce()", () => {
             .reduce(transformer);
         expect(result).toEqual([2, 4, 6]);
     });
-
-    it("should use a transformer and initial value", () => {
-        const result = chainFrom([1, 2, 3])
-            .map(n => 2 * n)
-            .reduce(transformer, [1]);
-        expect(result).toEqual([1, 2, 4, 6]);
-    });
 });
 
 describe("count()", () => {
@@ -554,6 +546,26 @@ describe("some()", () => {
     });
 });
 
+describe("toObject()", () => {
+    it("should make an object using the provided functions", () => {
+        const input = ["a", "bb", "ccc"];
+        const result = chainFrom(input).toObject(s => s, s => s.length);
+        expect(result).toEqual({ a: 1, bb: 2, ccc: 3 });
+    });
+
+    it("should replace earlier values with later ones at the same key", () => {
+        const input: Array<[string, number]> = [["a", 1], ["b", 1], ["a", 2]];
+        const result = chainFrom(input).toObject(x => x[0], x => x[1]);
+        expect(result).toEqual({ a: 2, b: 1 });
+    });
+
+    it("should pass the index to the functions as the second argument", () => {
+        const input = ["a", "b", "c"];
+        const result = chainFrom(input).toObject((s, i) => s + i, (_, i) => i);
+        expect(result).toEqual({ a0: 0, b1: 1, c2: 2 });
+    });
+});
+
 describe("toArray()", () => {
     const input = ["a", "bb", "ccc"];
 
@@ -667,15 +679,6 @@ describe("toMin()", () => {
             ),
         );
         expect(result).toEqual(["b", 1]);
-    });
-});
-
-describe("toObject()", () => {
-    it("should build an object out of key-value pairs", () => {
-        const result = chainFrom(["a", "bb", "ccc"])
-            .map(s => [s, s.length])
-            .reduce(toObject<number>());
-        expect(result).toEqual({ a: 1, bb: 2, ccc: 3 });
     });
 });
 

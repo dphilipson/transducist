@@ -480,80 +480,12 @@ chainFrom(["a", "bb", "ccc"])
     .reduce(toMax()); // -> 3
 ```
 
-### `toObject()`
-
-For a chain of two element arrays, creates an object whose keys are the first
-element of each array and whose values are the second. The first element of each
-pair must be a string. Further, a type parameter must be provided to specify the
-type of the values. For example:
-
-```ts
-chainFrom(["a", "bb", "ccc"])
-    .map(s => [s, s.length])
-    .reduce(toObject<number>()); // -> { a: 1, bb: 2, ccc: 3 }
-```
-
 ## Utility functions
 
 ### `isReduced(result)`
 
 Returns true if `result` is a reduced value as described by the [transducer
 protocol](https://github.com/cognitect-labs/transducers-js#reduced).
-
-### `makeTransducer(f: (reducer, result, input, index) => result)`
-
-Convenience function for defining new transducers. Given a function which takes
-a reducer and returns another reducer, return a transducer.
-
-The full definition of a transducer is a function from transformer to
-transformer, but most transducers can more easily be thought of as a function
-from reducer to reducer instead. This helper allows transducers to be defined in
-terms of such a function, removing the boilerplate of defining
-`@@transducer/init`, etc. methods on a transformer.
-
-Note that the signature `reducer => reducer` expands to `reducer => (result,
-input) => result`, which after uncurrying becomes `(reducer, result, input) =>
-result`, which is (almost) the actual type in the signature of this function.
-
-Additionally, the function is provided the current index, to support creation of
-APIs similar to JavaScript's array transformation methods such as `.map()` and
-`.filter()` in which the index of the current element is passed to the provided
-function as a second argument.
-
-An example is given in the [Advanced
-Usage](https://github.com/dphilipson/typescript-transducers#using-custom-transducers)
-section of the readme, where
-
-```ts
-function replace<T>(initial: T, replacement: T) {
-    return makeTransducer((reducer, result, input) => {
-        const output = intput === initial ? replacement : input;
-        return reducer(result, output);
-    });
-}
-```
-
-is equivalent to
-
-```ts
-import {
-    CompletingTransformer,
-    Transducer,
-    Transformer,
-} from "typescript-transducers";
-
-function replace<T>(initial: T, replacement: T): Transducer<T, T> {
-    return (xf: CompletingTransformer<T, any, T>) => ({
-        ["@@transducer/init"]: () => xf["@@transducer/init"](),
-        ["@@transducer/result"]: (result: T) =>
-            xf["@@transducer/result"](result),
-        ["@@transducer/step"]: (result: T, input: T) => {
-            const output = input === initial ? replacement : input;
-            return xf["@@transducer/step"](result, output);
-        },
-    });
-}
-```
 
 ### `rangeIterator(start?, end, step?)`
 

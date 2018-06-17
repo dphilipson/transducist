@@ -31,7 +31,7 @@ class Dedupe<TResult, TCompleteResult, TInput>
         >,
     ) {}
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -69,7 +69,7 @@ class Drop<TResult, TCompleteResult, TInput>
         private readonly n: number,
     ) {}
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -108,7 +108,7 @@ class DropWhile<TResult, TCompleteResult, TInput>
         this.needsIndex = pred.length > 1;
     }
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -158,7 +158,7 @@ class Filter<TResult, TCompleteResult, TInput>
         this.needsIndex = pred.length > 1;
     }
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -203,7 +203,7 @@ class FlatMap<TResult, TCompleteResult, TInput, TOutput>
         this.needsIndex = f.length > 1;
     }
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -241,7 +241,7 @@ class Interpose<TResult, TCompleteResult, TInput>
         private readonly separator: TInput,
     ) {}
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -290,7 +290,7 @@ class Map<TResult, TCompleteResult, TInput, TOutput>
         this.needsIndex = f.length > 1;
     }
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -326,7 +326,7 @@ class PartitionAll<TResult, TCompleteResult, TInput>
         private readonly n: number,
     ) {}
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -379,7 +379,7 @@ class PartitionBy<TResult, TCompleteResult, TInput>
         private readonly f: (item: TInput, i: number) => any,
     ) {}
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -432,7 +432,7 @@ class Take<TResult, TCompleteResult, TInput>
         private readonly n: number,
     ) {}
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 
@@ -496,7 +496,7 @@ class TakeWhile<TResult, TCompleteResult, TInput>
         this.needsIndex = pred.length > 1;
     }
 
-    public ["@@transducer/init"](): TResult | undefined {
+    public ["@@transducer/init"](): TResult {
         return this.xf["@@transducer/init"]();
     }
 

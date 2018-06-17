@@ -12,12 +12,12 @@ export type QuittingReducer<TResult, TInput> = (
     input: TInput,
 ) => TResult | Reduced<TResult>;
 
-export type Transducer<TInput, TOutput> = <TResult, TCompleteResult>(
-    xf: CompletingTransformer<TResult, TCompleteResult, TOutput>,
-) => CompletingTransformer<TResult, TCompleteResult, TInput>;
+export type Transducer<TInput, TOutput> = <TCompleteResult>(
+    xf: CompletingTransformer<any, TCompleteResult, TOutput>,
+) => CompletingTransformer<any, TCompleteResult, TInput>;
 
 export interface CompletingTransformer<TResult, TCompleteResult, TInput> {
-    ["@@transducer/init"](): TResult | undefined;
+    ["@@transducer/init"](): TResult;
     ["@@transducer/step"](
         result: TResult,
         input: TInput,

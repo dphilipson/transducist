@@ -212,17 +212,6 @@ const result = chainFrom([1, 2, 3, 4, 5])
     .compose(replace(3, 1000))
     .toArray(); // -> [1, 2, 1000, 4, 5]
 ```
-If you find yourself doing this a lot, you may want to check out the utility
-function `makeTransducer()` to reduce boilerplate, which would allow the above
-to be written as
-```ts
-function replace<T>(initial: T, replacement: T) {
-    return makeTransducer((reducer, result, input) => {
-        const output = intput === initial ? replacement : input;
-        return reducer(result, output);
-    });
-}
-```
 All of this library's transformation methods are implemented internally with
 calls to `.compose()`.
 

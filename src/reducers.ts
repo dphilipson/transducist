@@ -119,6 +119,22 @@ export function some<T>(
     return filter(pred)(isNotEmptyTransformer);
 }
 
+let toArrayTransformer: Transformer<any[], any> | undefined;
+
+export function toArray<T>(): Transformer<T[], T> {
+    if (!toArrayTransformer) {
+        toArrayTransformer = {
+            ["@@transducer/init"]: () => [],
+            ["@@transducer/result"]: (result: any[]) => result,
+            ["@@transducer/step"]: (result: any[], input: any) => {
+                result.push(input);
+                return result;
+            },
+        };
+    }
+    return toArrayTransformer;
+}
+
 let averageTransformer:
     | CompletingTransformer<[number, number], number | null, number>
     | undefined;
@@ -196,25 +212,46 @@ export function toMin(
     return new Min(comparator);
 }
 
-let toObjectTransformer:
-    | Transformer<{ [key: string]: any }, [string, any]>
-    | undefined;
+class ToObject<T, U> implements Transformer<{ [key: string]: U }, T> {
+    private readonly needsIndex: boolean;
+    private i = 0;
 
-export function toObject<T>(): Transformer<{ [key: string]: T }, [string, T]> {
-    if (!toObjectTransformer) {
-        toObjectTransformer = {
-            ["@@transducer/init"]: () => ({}),
-            ["@@transducer/result"]: (result: { [key: string]: any }) => result,
-            ["@@transducer/step"]: (
-                result: { [key: string]: any },
-                [key, value]: [string, any],
-            ) => {
-                result[key] = value;
-                return result;
-            },
-        };
+    constructor(
+        private readonly getKey: (item: T, i: number) => string,
+        private readonly getValue: (item: T, i: number) => U,
+    ) {
+        this.needsIndex = getKey.length > 1 || getValue.length > 1;
     }
-    return toObjectTransformer;
+
+    public ["@@transducer/init"](): { [key: string]: U } {
+        return {};
+    }
+
+    public ["@@transducer/result"](result: {
+        [key: string]: U;
+    }): { [key: string]: U } {
+        return result;
+    }
+
+    public ["@@transducer/step"](
+        result: { [key: string]: U },
+        item: T,
+    ): { [key: string]: U } {
+        if (this.needsIndex) {
+            const i = this.i++;
+            result[this.getKey(item, i)] = this.getValue(item, i);
+        } else {
+            result[(this.getKey as any)(item)] = (this.getValue as any)(item);
+        }
+        return result;
+    }
+}
+
+export function toObject<T, U>(
+    getKey: (item: T, i: number) => string,
+    getValue: (item: T, i: number) => U,
+): Transformer<{ [key: string]: U }, T> {
+    return new ToObject(getKey, getValue);
 }
 
 let sumTransformer: Transformer<number, number> | undefined;
@@ -230,20 +267,4 @@ export function toSum(): Transformer<number, number> {
         };
     }
     return sumTransformer;
-}
-
-let toArrayTransformer: Transformer<any[], any> | undefined;
-
-export function toArray<T>(): Transformer<T[], T> {
-    if (!toArrayTransformer) {
-        toArrayTransformer = {
-            ["@@transducer/init"]: () => [],
-            ["@@transducer/result"]: (result: any[]) => result,
-            ["@@transducer/step"]: (result: any[], input: any) => {
-                result.push(input);
-                return result;
-            },
-        };
-    }
-    return toArrayTransformer;
 }

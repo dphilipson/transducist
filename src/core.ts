@@ -12,7 +12,6 @@ export function transduce<TResult, TCompleteResult, TInput, TOutput>(
     collection: Iterable<TInput>,
     transform: Transducer<TInput, TOutput>,
     reducer: CompletingTransformer<TResult, TCompleteResult, TOutput>,
-    initialValue?: TInput,
 ): TCompleteResult;
 export function transduce<TResult, TInput, TOutput>(
     collection: Iterable<TInput>,
@@ -32,29 +31,24 @@ export function transduce<TResult, TCompleteResult, TInput, TOutput>(
     if (typeof reducer === "function") {
         // Type coercion because in this branch, TResult and TCompleteResult are
         // the same, but the checker doesn't know that.
-        transformer = new ReducerWrappingTransformer(reducer) as any;
+        transformer = new ReducerWrappingTransformer(
+            reducer,
+            initialValue!,
+        ) as any;
     } else {
         transformer = reducer;
-        if (arguments.length < 4) {
-            initialValue = transformer["@@transducer/init"]();
-        }
     }
-    return reduceWithTransformer(
-        collection,
-        transform(transformer),
-        initialValue,
-    );
+    return reduceWithTransformer(collection, transform(transformer));
 }
 
 function reduceWithTransformer<TResult, TCompleteResult, TInput>(
     collection: Iterable<TInput>,
     f: CompletingTransformer<TResult, TCompleteResult, TInput>,
-    initialValue: TResult,
 ): TCompleteResult {
     const uncompleteResult = reduceWithFunction(
         collection,
         f["@@transducer/step"].bind(f),
-        initialValue,
+        f["@@transducer/init"](),
     );
     return f["@@transducer/result"](unreduced(uncompleteResult));
 }
@@ -84,12 +78,15 @@ class ReducerWrappingTransformer<TResult, TInput>
     implements Transformer<TResult, TInput> {
     public readonly "@@transducer/step": QuittingReducer<TResult, TInput>;
 
-    constructor(f: QuittingReducer<TResult, TInput>) {
+    constructor(
+        f: QuittingReducer<TResult, TInput>,
+        private readonly initialValue: TResult,
+    ) {
         this["@@transducer/step"] = f;
     }
 
-    public ["@@transducer/init"](): TResult | undefined {
-        return undefined;
+    public ["@@transducer/init"](): TResult {
+        return this.initialValue;
     }
 
     public ["@@transducer/result"](result: TResult): TResult {
