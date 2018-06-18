@@ -11,7 +11,9 @@ import {
     some,
     toArray,
     toMap,
+    toMapGroupBy,
     toObject,
+    toObjectGroupBy,
     toSet,
 } from "./reducers";
 import {
@@ -29,25 +31,30 @@ import {
     takeNth,
     takeWhile,
 } from "./transducers";
-import { CompletingTransformer, QuittingReducer, Transducer } from "./types";
+import {
+    CompletingTransformer,
+    Dictionary,
+    QuittingReducer,
+    Transducer,
+} from "./types";
 
 export interface TransformChain<T> {
     compose<U>(transducer: Transducer<T, U>): TransformChain<U>;
 
     dedupe(): TransformChain<T>;
     drop(n: number): TransformChain<T>;
-    dropWhile(pred: (item: T, index: number) => boolean): TransformChain<T>;
-    filter(pred: (item: T, index: number) => boolean): TransformChain<T>;
-    flatMap<U>(f: (item: T, index: number) => Iterable<U>): TransformChain<U>;
+    dropWhile(pred: (item: T) => boolean): TransformChain<T>;
+    filter(pred: (item: T) => boolean): TransformChain<T>;
+    flatMap<U>(f: (item: T) => Iterable<U>): TransformChain<U>;
     interpose(separator: T): TransformChain<T>;
-    map<U>(f: (item: T, index: number) => U): TransformChain<U>;
+    map<U>(f: (item: T) => U): TransformChain<U>;
     partitionAll(n: number): TransformChain<T[]>;
-    partitionBy(pred: (item: T, index: number) => any): TransformChain<T[]>;
-    remove(pred: (item: T, index: number) => boolean): TransformChain<T>;
+    partitionBy(pred: (item: T) => any): TransformChain<T[]>;
+    remove(pred: (item: T) => boolean): TransformChain<T>;
     removeAbsent(): TransformChain<NonNullable<T>>;
     take(n: number): TransformChain<T>;
     takeNth(n: number): TransformChain<T>;
-    takeWhile(pred: (item: T, index: number) => boolean): TransformChain<T>;
+    takeWhile(pred: (item: T) => boolean): TransformChain<T>;
 
     reduce<TResult>(
         reducer: QuittingReducer<TResult, T>,
@@ -58,22 +65,29 @@ export interface TransformChain<T> {
     ): TCompleteResult;
 
     count(): number;
-    every(pred: (item: T, index: number) => boolean): boolean;
-    find(pred: (item: T, index: number) => boolean): T | null;
+    every(pred: (item: T) => boolean): boolean;
+    find(pred: (item: T) => boolean): T | null;
     first(): T | null;
-    forEach(f: (item: T, index: number) => void): void;
+    forEach(f: (item: T) => void): void;
     isEmpty(): boolean;
     joinToString(separator: string): string;
-    some(pred: (item: T, index: number) => boolean): boolean;
+    some(pred: (item: T) => boolean): boolean;
     toArray(): T[];
-    toMap<K, V>(
-        getKey: (item: T, index: number) => K,
-        getValue: (item: T, index: number) => V,
+    toMap<K, V>(getKey: (item: T) => K, getValue: (item: T) => V): Map<K, V>;
+    toMapGroupBy<K>(getKey: (item: T) => K): Map<K, T[]>;
+    toMapGroupBy<K, V>(
+        getKey: (item: T) => K,
+        transformer: CompletingTransformer<any, V, T>,
     ): Map<K, V>;
     toObject<U>(
-        getKey: (item: T, index: number) => string,
-        getValue: (item: T, index: number) => U,
-    ): { [key: string]: U };
+        getKey: (item: T) => string,
+        getValue: (item: T) => U,
+    ): Dictionary<U>;
+    toObjectGroupBy(getKey: (item: T) => string): Dictionary<T[]>;
+    toObjectGroupBy<U>(
+        getKey: (item: T) => string,
+        transformer: CompletingTransformer<any, U, T>,
+    ): Dictionary<U>;
     toSet(): Set<T>;
 
     toIterator(): IterableIterator<T>;
@@ -84,30 +98,18 @@ export interface TransducerBuilder<TBase, T> {
 
     dedupe(): TransducerBuilder<TBase, T>;
     drop(n: number): TransducerBuilder<TBase, T>;
-    dropWhile(
-        pred: (item: T, index: number) => boolean,
-    ): TransducerBuilder<TBase, T>;
-    filter(
-        pred: (item: T, index: number) => boolean,
-    ): TransducerBuilder<TBase, T>;
-    flatMap<U>(
-        f: (item: T, index: number) => Iterable<U>,
-    ): TransducerBuilder<TBase, U>;
+    dropWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
+    filter(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
+    flatMap<U>(f: (item: T) => Iterable<U>): TransducerBuilder<TBase, U>;
     interpose(separator: T): TransducerBuilder<TBase, T>;
-    map<U>(f: (item: T, index: number) => U): TransducerBuilder<TBase, U>;
+    map<U>(f: (item: T) => U): TransducerBuilder<TBase, U>;
     partitionAll(n: number): TransducerBuilder<TBase, T[]>;
-    partitionBy(
-        pred: (item: T, index: number) => boolean,
-    ): TransducerBuilder<TBase, T[]>;
-    remove(
-        pred: (item: T, index: number) => boolean,
-    ): TransducerBuilder<TBase, T>;
+    partitionBy(pred: (item: T) => boolean): TransducerBuilder<TBase, T[]>;
+    remove(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
     removeAbsent(): TransducerBuilder<TBase, NonNullable<T>>;
     take(n: number): TransducerBuilder<TBase, T>;
     takeNth(n: number): TransducerBuilder<TBase, T>;
-    takeWhile(
-        pred: (item: T, index: number) => boolean,
-    ): TransducerBuilder<TBase, T>;
+    takeWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
 
     build(): Transducer<TBase, T>;
 }
@@ -153,21 +155,15 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(drop(n));
     }
 
-    public dropWhile(
-        pred: (item: T, index: number) => boolean,
-    ): CombinedBuilder<TBase, T> {
+    public dropWhile(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
         return this.compose(dropWhile(pred));
     }
 
-    public filter(
-        pred: (item: T, index: number) => boolean,
-    ): CombinedBuilder<TBase, T> {
+    public filter(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
         return this.compose(filter(pred));
     }
 
-    public flatMap<U>(
-        f: (item: T, index: number) => Iterable<U>,
-    ): CombinedBuilder<TBase, U> {
+    public flatMap<U>(f: (item: T) => Iterable<U>): CombinedBuilder<TBase, U> {
         return this.compose(flatMap(f));
     }
 
@@ -175,7 +171,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(interpose(separator));
     }
 
-    public map<U>(f: (item: T, index: number) => U): CombinedBuilder<TBase, U> {
+    public map<U>(f: (item: T) => U): CombinedBuilder<TBase, U> {
         return this.compose(map(f));
     }
 
@@ -183,15 +179,11 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(partitionAll(n));
     }
 
-    public partitionBy(
-        f: (item: T, index: number) => any,
-    ): CombinedBuilder<TBase, T[]> {
+    public partitionBy(f: (item: T) => any): CombinedBuilder<TBase, T[]> {
         return this.compose(partitionBy(f));
     }
 
-    public remove(
-        pred: (item: T, index: number) => boolean,
-    ): CombinedBuilder<TBase, T> {
+    public remove(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
         return this.compose(remove(pred));
     }
 
@@ -210,9 +202,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(takeNth(n));
     }
 
-    public takeWhile(
-        pred: (item: T, index: number) => boolean,
-    ): CombinedBuilder<TBase, T> {
+    public takeWhile(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
         return this.compose(takeWhile(pred));
     }
 
@@ -249,11 +239,11 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(count());
     }
 
-    public every(pred: (item: T, index: number) => boolean): boolean {
+    public every(pred: (item: T) => boolean): boolean {
         return this.reduce(every(pred));
     }
 
-    public find(pred: (item: T, index: number) => boolean): T | null {
+    public find(pred: (item: T) => boolean): T | null {
         return this.reduce(find(pred));
     }
 
@@ -261,7 +251,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(first());
     }
 
-    public forEach(f: (item: T, index: number) => void): void {
+    public forEach(f: (item: T) => void): void {
         this.reduce(forEach(f));
     }
 
@@ -273,7 +263,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(joinToString(separator));
     }
 
-    public some(pred: (item: T, index: number) => boolean): boolean {
+    public some(pred: (item: T) => boolean): boolean {
         return this.reduce(some(pred));
     }
 
@@ -282,17 +272,41 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
     }
 
     public toMap<K, V>(
-        getKey: (item: T, index: number) => K,
-        getValue: (item: T, index: number) => V,
+        getKey: (item: T) => K,
+        getValue: (item: T) => V,
     ): Map<K, V> {
         return this.reduce(toMap(getKey, getValue));
     }
 
+    public toMapGroupBy<K>(getKey: (item: T) => K): Map<K, T[]>;
+    public toMapGroupBy<K, V>(
+        getKey: (item: T) => K,
+        transformer: CompletingTransformer<any, V, T>,
+    ): Map<K, V>;
+    public toMapGroupBy<K>(
+        getKey: (item: T) => K,
+        transformer?: CompletingTransformer<any, any, T>,
+    ): Map<K, any> {
+        return this.reduce(toMapGroupBy(getKey, transformer as any));
+    }
+
     public toObject<U>(
-        getKey: (item: T, index: number) => string,
-        getValue: (item: T, index: number) => U,
-    ): { [key: string]: U } {
+        getKey: (item: T) => string,
+        getValue: (item: T) => U,
+    ): Dictionary<U> {
         return this.reduce(toObject(getKey, getValue));
+    }
+
+    public toObjectGroupBy(getKey: (item: T) => string): Dictionary<T[]>;
+    public toObjectGroupBy<U>(
+        getKey: (item: T) => string,
+        transformer: CompletingTransformer<any, U, T>,
+    ): Dictionary<U>;
+    public toObjectGroupBy(
+        getKey: (item: T) => string,
+        transformer?: CompletingTransformer<any, any, T>,
+    ): Dictionary<any> {
+        return this.reduce(toObjectGroupBy(getKey, transformer as any));
     }
 
     public toSet(): Set<T> {

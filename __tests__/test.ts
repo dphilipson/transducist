@@ -1,5 +1,7 @@
 import {
     chainFrom,
+    count,
+    first,
     rangeIterator,
     toAverage,
     toMax,
@@ -87,13 +89,6 @@ describe("dropWhile()", () => {
             .toArray();
         expect(result).toEqual([3, 4, 5]);
     });
-
-    it("should pass the index to the predicate as the second argument", () => {
-        const result = chainFrom([0, 1, 2, 10, 4])
-            .dropWhile((n, i) => n === i)
-            .toArray();
-        expect(result).toEqual([10, 4]);
-    });
 });
 
 describe("filter()", () => {
@@ -103,13 +98,6 @@ describe("filter()", () => {
             .toArray();
         expect(result).toEqual([2, 4]);
     });
-
-    it("should pass the index to the predicate as the second argument", () => {
-        const result = chainFrom([0, 1, 2, 10, 4])
-            .filter((n, i) => n === i)
-            .toArray();
-        expect(result).toEqual([0, 1, 2, 4]);
-    });
 });
 
 describe("flatMap()", () => {
@@ -118,13 +106,6 @@ describe("flatMap()", () => {
             .flatMap(s => s.split(""))
             .toArray();
         expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
-    });
-
-    it("should pass the index to the function as the second argument", () => {
-        const result = chainFrom([10, 20, 30])
-            .flatMap((n, i) => [n, i])
-            .toArray();
-        expect(result).toEqual([10, 0, 20, 1, 30, 2]);
     });
 
     it("should work when mapping to iterators", () => {
@@ -174,13 +155,6 @@ describe("map()", () => {
             .toArray();
         expect(result).toEqual([1, 2, 3]);
     });
-
-    it("should pass the index to the function as the second argument", () => {
-        const result = chainFrom([10, 10, 10])
-            .map((x, i) => x * i)
-            .toArray();
-        expect(result).toEqual([0, 10, 20]);
-    });
 });
 
 describe("partitionAll()", () => {
@@ -211,13 +185,6 @@ describe("partitionBy()", () => {
             .toArray();
         expect(result).toEqual([["a", "b"], ["cc", "dd"], ["e"]]);
     });
-
-    it("should pass the index to the function as the second argument", () => {
-        const result = chainFrom([10, 9, 6, 5, 3, 1])
-            .partitionBy((n, i) => n + i)
-            .toArray();
-        expect(result).toEqual([[10, 9], [6, 5], [3], [1]]);
-    });
 });
 
 describe("remove()", () => {
@@ -226,13 +193,6 @@ describe("remove()", () => {
             .remove(n => n % 2 === 0)
             .toArray();
         expect(result).toEqual([1, 3, 5]);
-    });
-
-    it("should pass the index to the predicate as the second argument", () => {
-        const result = chainFrom([0, 1, 2, 10, 4])
-            .remove((n, i) => n === i)
-            .toArray();
-        expect(result).toEqual([10]);
     });
 });
 
@@ -318,13 +278,6 @@ describe("takeWhile()", () => {
         expect(result).toEqual([1, 2]);
     });
 
-    it("should pass the index to the predicate as the second argument", () => {
-        const result = chainFrom([0, 1, 2, 10, 4])
-            .takeWhile((n, i) => n === i)
-            .toArray();
-        expect(result).toEqual([0, 1, 2]);
-    });
-
     it("should terminate after the predicate fails", () => {
         const iterator = rangeIterator(1, 5);
         const result = chainFrom(iterator)
@@ -396,13 +349,6 @@ describe("every()", () => {
         expect(result).toEqual(false);
         expect(iterator.next().value).toEqual(4);
     });
-
-    it("should pass the index to the predicate as the second argument", () => {
-        const result1 = chainFrom([0, 1, 2, 3, 4]).every((n, i) => n === i);
-        const result2 = chainFrom([0, 1, 2, 4, 4]).every((n, i) => n === i);
-        expect(result1).toEqual(true);
-        expect(result2).toEqual(false);
-    });
 });
 
 describe("find()", () => {
@@ -427,11 +373,6 @@ describe("find()", () => {
             .find(x => x === 20);
         expect(result).toEqual(20);
         expect(iterator.next().value).toEqual(3);
-    });
-
-    it("should pass the index to the predicate as the second argument", () => {
-        const result = chainFrom([0, 1, 2, 10, 4]).find((x, i) => x !== i);
-        expect(result).toEqual(10);
     });
 });
 
@@ -471,12 +412,6 @@ describe("forEach()", () => {
             .map(s => s.length)
             .forEach(n => result.push(n));
         expect(result).toEqual([1, 2, 3]);
-    });
-
-    it("should pass the index to the function as the second argument", () => {
-        const result: number[] = [];
-        chainFrom([10, 20, 30]).forEach((n, i) => result.push(n * i));
-        expect(result).toEqual([0, 20, 60]);
     });
 });
 
@@ -573,11 +508,37 @@ describe("toMap()", () => {
         const result = chainFrom(input).toMap(x => x[0], x => x[1]);
         expect(result).toEqual(new Map([["a", 2], ["b", 1]]));
     });
+});
 
-    it("should pass the index to the functions as the second argument", () => {
-        const input = ["a", "b", "c"];
-        const result = chainFrom(input).toMap((s, i) => s + i, (_, i) => i);
-        expect(result).toEqual(new Map([["a0", 0], ["b1", 1], ["c2", 2]]));
+describe("toMapGroupBy()", () => {
+    it("should group into arrays by default", () => {
+        const input = ["a", "b", "aa", "aaa", "bc"];
+        const result = chainFrom(input).toMapGroupBy(s => s[0]);
+        expect(result).toEqual(
+            new Map([["a", ["a", "aa", "aaa"]], ["b", ["b", "bc"]]]),
+        );
+    });
+
+    it("should use the provided transformer", () => {
+        const input = ["a", "b", "aa", "aaa", "bc"];
+        const result = chainFrom(input).toMapGroupBy(s => s[0], count());
+        expect(result).toEqual(new Map([["a", 3], ["b", 2]]));
+    });
+
+    it("should respect when provided transformer returns reduced", () => {
+        const input = ["a", "b", "aa", "aaa", "bc"];
+        const firstTransformer = first();
+        const stepSpy = jest.spyOn(firstTransformer, "@@transducer/step");
+        try {
+            const result = chainFrom(input).toMapGroupBy(
+                s => s[0],
+                firstTransformer,
+            );
+            expect(result).toEqual(new Map([["a", "a"], ["b", "b"]]));
+            expect(stepSpy).toHaveBeenCalledTimes(2);
+        } finally {
+            stepSpy.mockRestore();
+        }
     });
 });
 
@@ -593,11 +554,35 @@ describe("toObject()", () => {
         const result = chainFrom(input).toObject(x => x[0], x => x[1]);
         expect(result).toEqual({ a: 2, b: 1 });
     });
+});
 
-    it("should pass the index to the functions as the second argument", () => {
-        const input = ["a", "b", "c"];
-        const result = chainFrom(input).toObject((s, i) => s + i, (_, i) => i);
-        expect(result).toEqual({ a0: 0, b1: 1, c2: 2 });
+describe("toObjectGroupBy()", () => {
+    it("should group into arrays by default", () => {
+        const input = ["a", "b", "aa", "aaa", "bc"];
+        const result = chainFrom(input).toObjectGroupBy(s => s[0]);
+        expect(result).toEqual({ a: ["a", "aa", "aaa"], b: ["b", "bc"] });
+    });
+
+    it("should use the provided transformer", () => {
+        const input = ["a", "b", "aa", "aaa", "bc"];
+        const result = chainFrom(input).toObjectGroupBy(s => s[0], count());
+        expect(result).toEqual({ a: 3, b: 2 });
+    });
+
+    it("should respect when provided transformer returns reduced", () => {
+        const input = ["a", "b", "aa", "aaa", "bc"];
+        const firstTransformer = first();
+        const stepSpy = jest.spyOn(firstTransformer, "@@transducer/step");
+        try {
+            const result = chainFrom(input).toObjectGroupBy(
+                s => s[0],
+                firstTransformer,
+            );
+            expect(result).toEqual({ a: "a", b: "b" });
+            expect(stepSpy).toHaveBeenCalledTimes(2);
+        } finally {
+            stepSpy.mockRestore();
+        }
     });
 });
 

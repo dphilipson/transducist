@@ -1,8 +1,8 @@
 import { getIterator } from "./iterables";
 import {
     CompletingTransformer,
+    MaybeReduced,
     QuittingReducer,
-    Reduced,
     Transducer,
     Transformer,
 } from "./types";
@@ -57,7 +57,7 @@ export function reduceWithFunction<TResult, TInput>(
     collection: Iterable<TInput>,
     f: QuittingReducer<TResult, TInput>,
     initialValue: TResult,
-): TResult | Reduced<TResult> {
+): MaybeReduced<TResult> {
     const iterator = getIterator(collection);
     let result = initialValue;
     while (true) {

@@ -1,6 +1,11 @@
 import { filter, remove } from "./transducers";
-import { Comparator, CompletingTransformer, Transformer } from "./types";
-import { reduced } from "./util";
+import {
+    Comparator,
+    CompletingTransformer,
+    Dictionary,
+    Transformer,
+} from "./types";
+import { isReduced, reduced } from "./util";
 
 // Transformers with no parameters, such as the one for count() here, are
 // created the first time they are called so they can be tree shaken if unused.
@@ -19,15 +24,11 @@ export function count(): Transformer<number, any> {
     return countTransformer;
 }
 
-export function every<T>(
-    pred: (item: T, index: number) => boolean,
-): Transformer<boolean, T> {
+export function every<T>(pred: (item: T) => boolean): Transformer<boolean, T> {
     return remove(pred)(isEmpty());
 }
 
-export function find<T>(
-    pred: (item: T, index: number) => boolean,
-): Transformer<T | null, T> {
+export function find<T>(pred: (item: T) => boolean): Transformer<T | null, T> {
     return filter(pred)(first());
 }
 
@@ -45,9 +46,7 @@ export function first<T>(): Transformer<T | null, T> {
 }
 
 class ForEachTransformer<T> implements Transformer<void, T> {
-    private i = 0;
-
-    constructor(private readonly f: (input: T, index: number) => void) {}
+    constructor(private readonly f: (input: T) => void) {}
 
     public ["@@transducer/init"]() {
         return undefined;
@@ -58,13 +57,11 @@ class ForEachTransformer<T> implements Transformer<void, T> {
     }
 
     public ["@@transducer/step"](_: void, input: T) {
-        return this.f(input, this.i++);
+        return this.f(input);
     }
 }
 
-export function forEach<T>(
-    f: (input: T, i: number) => void,
-): Transformer<void, T> {
+export function forEach<T>(f: (input: T) => void): Transformer<void, T> {
     return new ForEachTransformer(f);
 }
 
@@ -106,9 +103,7 @@ export function joinToString(
 
 let isNotEmptyTransformer: Transformer<boolean, any> | undefined;
 
-export function some<T>(
-    pred: (item: T, i: number) => boolean,
-): Transformer<boolean, T> {
+export function some<T>(pred: (item: T) => boolean): Transformer<boolean, T> {
     if (!isNotEmptyTransformer) {
         isNotEmptyTransformer = {
             ["@@transducer/init"]: () => false,
@@ -136,15 +131,10 @@ export function toArray<T>(): Transformer<T[], T> {
 }
 
 class ToMap<T, K, V> implements Transformer<Map<K, V>, T> {
-    private readonly needsIndex: boolean;
-    private i = 0;
-
     constructor(
-        private readonly getKey: (item: T, i: number) => K,
-        private readonly getValue: (item: T, i: number) => V,
-    ) {
-        this.needsIndex = getKey.length > 1 || getValue.length > 1;
-    }
+        private readonly getKey: (item: T) => K,
+        private readonly getValue: (item: T) => V,
+    ) {}
 
     public ["@@transducer/init"](): Map<K, V> {
         return new Map();
@@ -155,66 +145,187 @@ class ToMap<T, K, V> implements Transformer<Map<K, V>, T> {
     }
 
     public ["@@transducer/step"](result: Map<K, V>, item: T): Map<K, V> {
-        if (this.needsIndex) {
-            const i = this.i++;
-            result.set(this.getKey(item, i), this.getValue(item, i));
-        } else {
-            result.set(
-                (this.getKey as any)(item),
-                (this.getValue as any)(item),
-            );
-        }
+        result.set(this.getKey(item), this.getValue(item));
         return result;
     }
 }
 
 export function toMap<T, K, V>(
-    getKey: (item: T, i: number) => K,
-    getValue: (item: T, i: number) => V,
+    getKey: (item: T) => K,
+    getValue: (item: T) => V,
 ): Transformer<Map<K, V>, T> {
     return new ToMap(getKey, getValue);
 }
 
-class ToObject<T, U> implements Transformer<{ [key: string]: U }, T> {
-    private readonly needsIndex: boolean;
-    private i = 0;
+class InProgressTransformer<TResult, TCompleteResult, TInput> {
+    private result: TResult;
+    private isReduced = false;
 
-    constructor(
-        private readonly getKey: (item: T, i: number) => string,
-        private readonly getValue: (item: T, i: number) => U,
+    public constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TInput
+        >,
     ) {
-        this.needsIndex = getKey.length > 1 || getValue.length > 1;
+        this.result = xf["@@transducer/init"]();
     }
 
-    public ["@@transducer/init"](): { [key: string]: U } {
+    public step(input: TInput): void {
+        if (!this.isReduced) {
+            const newResult = this.xf["@@transducer/step"](this.result, input);
+            if (isReduced(newResult)) {
+                this.result = newResult["@@transducer/value"];
+                this.isReduced = true;
+            } else {
+                this.result = newResult;
+            }
+        }
+    }
+
+    public getResult(): TCompleteResult {
+        return this.xf["@@transducer/result"](this.result);
+    }
+}
+
+class ToMapGroupBy<T, K, V>
+    implements
+        CompletingTransformer<
+            Map<K, InProgressTransformer<any, V, T>>,
+            Map<K, V>,
+            T
+        > {
+    constructor(
+        private readonly getKey: (item: T) => K,
+        private readonly xf: CompletingTransformer<any, V, T>,
+    ) {}
+
+    public ["@@transducer/init"](): Map<K, InProgressTransformer<any, V, T>> {
+        return new Map();
+    }
+
+    public ["@@transducer/result"](
+        result: Map<K, InProgressTransformer<any, V, T>>,
+    ): Map<K, V> {
+        const completeResult = new Map<K, V>();
+        const entries = result.entries();
+        for (let step = entries.next(); !step.done; step = entries.next()) {
+            const [key, value] = step.value;
+            completeResult.set(key, value.getResult());
+        }
+        return completeResult;
+    }
+
+    public ["@@transducer/step"](
+        result: Map<K, InProgressTransformer<any, V, T>>,
+        item: T,
+    ): Map<K, InProgressTransformer<any, V, T>> {
+        const key = this.getKey(item);
+        if (!result.has(key)) {
+            result.set(key, new InProgressTransformer(this.xf));
+        }
+        result.get(key)!.step(item);
+        return result;
+    }
+}
+
+export function toMapGroupBy<T, K>(
+    getKey: (item: T) => K,
+): Transformer<Map<K, T[]>, T>;
+export function toMapGroupBy<T, K, V>(
+    getKey: (item: T) => K,
+    transformer: CompletingTransformer<any, V, T>,
+): Transformer<Map<K, V>, T>;
+export function toMapGroupBy<T, K>(
+    getKey: (item: T) => K,
+    transformer: CompletingTransformer<any, any, T> = toArray(),
+): Transformer<Map<K, any>, T> {
+    return new ToMapGroupBy(getKey, transformer);
+}
+
+class ToObject<T, U> implements Transformer<Dictionary<U>, T> {
+    constructor(
+        private readonly getKey: (item: T) => string,
+        private readonly getValue: (item: T) => U,
+    ) {}
+
+    public ["@@transducer/init"](): Dictionary<U> {
         return {};
     }
 
-    public ["@@transducer/result"](result: {
-        [key: string]: U;
-    }): { [key: string]: U } {
+    public ["@@transducer/result"](result: Dictionary<U>): Dictionary<U> {
         return result;
     }
 
     public ["@@transducer/step"](
-        result: { [key: string]: U },
+        result: Dictionary<U>,
         item: T,
-    ): { [key: string]: U } {
-        if (this.needsIndex) {
-            const i = this.i++;
-            result[this.getKey(item, i)] = this.getValue(item, i);
-        } else {
-            result[(this.getKey as any)(item)] = (this.getValue as any)(item);
-        }
+    ): Dictionary<U> {
+        result[this.getKey(item)] = this.getValue(item);
         return result;
     }
 }
 
 export function toObject<T, U>(
-    getKey: (item: T, i: number) => string,
-    getValue: (item: T, i: number) => U,
-): Transformer<{ [key: string]: U }, T> {
+    getKey: (item: T) => string,
+    getValue: (item: T) => U,
+): Transformer<Dictionary<U>, T> {
     return new ToObject(getKey, getValue);
+}
+
+class ToObjectGroupBy<T, U>
+    implements
+        CompletingTransformer<
+            Dictionary<InProgressTransformer<any, U, T>>,
+            Dictionary<U>,
+            T
+        > {
+    constructor(
+        private readonly getKey: (item: T) => string,
+        private readonly xf: CompletingTransformer<any, U, T>,
+    ) {}
+
+    public ["@@transducer/init"](): Dictionary<
+        InProgressTransformer<any, U, T>
+    > {
+        return {};
+    }
+
+    public ["@@transducer/result"](
+        result: Dictionary<InProgressTransformer<any, U, T>>,
+    ): Dictionary<U> {
+        const completeResult: Dictionary<U> = {};
+        Object.keys(result).forEach(
+            key => (completeResult[key] = result[key].getResult()),
+        );
+        return completeResult;
+    }
+
+    public ["@@transducer/step"](
+        result: Dictionary<InProgressTransformer<any, U, T>>,
+        item: T,
+    ): Dictionary<InProgressTransformer<any, U, T>> {
+        const key = this.getKey(item);
+        if (!result[key]) {
+            result[key] = new InProgressTransformer(this.xf);
+        }
+        result[key].step(item);
+        return result;
+    }
+}
+
+export function toObjectGroupBy<T>(
+    getKey: (item: T) => string,
+): Transformer<Dictionary<T[]>, T>;
+export function toObjectGroupBy<T, U>(
+    getKey: (item: T) => string,
+    transformer: CompletingTransformer<any, U, T>,
+): Transformer<Dictionary<U>, T>;
+export function toObjectGroupBy<T>(
+    getKey: (item: T) => string,
+    transformer: CompletingTransformer<any, any, T> = toArray(),
+): Transformer<Dictionary<any>, T> {
+    return new ToObjectGroupBy(getKey, transformer);
 }
 
 let toSetTransformer: Transformer<Set<any>, any> | undefined;

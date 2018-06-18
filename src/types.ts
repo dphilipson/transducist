@@ -1,7 +1,9 @@
-export interface Reduced<TResult> {
+export interface Reduced<T> {
     ["@@transducer/reduced"]: boolean;
-    ["@@transducer/value"]: TResult;
+    ["@@transducer/value"]: T;
 }
+
+export type MaybeReduced<T> = T | Reduced<T>;
 
 /**
  * Reducers are allowed to indicate that no further computation is needed by
@@ -10,7 +12,7 @@ export interface Reduced<TResult> {
 export type QuittingReducer<TResult, TInput> = (
     result: TResult,
     input: TInput,
-) => TResult | Reduced<TResult>;
+) => MaybeReduced<TResult>;
 
 export type Transducer<TInput, TOutput> = <TCompleteResult>(
     xf: CompletingTransformer<any, TCompleteResult, TOutput>,
@@ -21,7 +23,7 @@ export interface CompletingTransformer<TResult, TCompleteResult, TInput> {
     ["@@transducer/step"](
         result: TResult,
         input: TInput,
-    ): TResult | Reduced<TResult>;
+    ): MaybeReduced<TResult>;
     ["@@transducer/result"](result: TResult): TCompleteResult;
 }
 
@@ -35,3 +37,7 @@ export type Transformer<TResult, TInput> = CompletingTransformer<
 export type NonNullable<T> = T & {};
 
 export type Comparator<T> = (a: T, b: T) => number;
+
+export interface Dictionary<T> {
+    [key: string]: T;
+}

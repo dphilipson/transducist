@@ -1,4 +1,4 @@
-import { Reduced, Transducer } from "./types";
+import { MaybeReduced, Reduced, Transducer } from "./types";
 
 export function reduced<T>(result: T): Reduced<T> {
     return {
@@ -7,15 +7,15 @@ export function reduced<T>(result: T): Reduced<T> {
     };
 }
 
-export function isReduced<T>(result: T | Reduced<T>): result is Reduced<T> {
+export function isReduced<T>(result: MaybeReduced<T>): result is Reduced<T> {
     return result && (result as any)["@@transducer/reduced"] === true;
 }
 
-export function ensureReduced<T>(result: T | Reduced<T>): Reduced<T> {
+export function ensureReduced<T>(result: MaybeReduced<T>): Reduced<T> {
     return isReduced(result) ? result : reduced(result);
 }
 
-export function unreduced<T>(result: T | Reduced<T>): T {
+export function unreduced<T>(result: MaybeReduced<T>): T {
     return isReduced(result) ? result["@@transducer/value"] : result;
 }
 
