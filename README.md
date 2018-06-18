@@ -107,21 +107,20 @@ With NPM:
 ```
 npm install --save transducist
 ```
-This library, with the exception of the `toSet` and `toMap` functions, works
-fine on ES5 without any polyfills or transpilation, but its TypeScript
-definitions depend on ES6 definitions for the `Iterable`, `Map`, and `Set`
-types. If you use TypeScript in your project, you must make definitions for
-these types available by doing one of the following:
+This library, with the exception of the functions which relate to `Set` and `Map`, works fine on ES5 without any polyfills or transpilation, but its
+TypeScript definitions depend on ES6 definitions for the `Iterable` type. If you use TypeScript in your project, you must make definitions
+for these types available by doing one of the following:
 
 * In `tsconfig.json`, set `"target"` to `"es6"` or higher.
-* In `tsconfig.json`, set `"libs"` to include `"es2015.iterable"` and
-  `"es2015.collections"` or something that includes them.
+* In `tsconfig.json`, set `"libs"` to include `"es2015.iterable"` or something
+  that includes it
 * Add the definitions by some other means, such as importing types for
   `es6-shim`.
 
-Furthermore, the methods `toSet` and `toMap` assume the presence of ES6 `Set`
-and `Map` classes in your environment. If you wish to use these methods, you
-must ensure your environment has these classes or provide a polyfill.
+Furthermore, the methods `toSet`, `toMap`, and `toMapGroupBy` assume the
+presence of ES6 `Set` and `Map` classes in your environment. If you wish to use
+these methods, you must ensure your environment has these classes or provide a
+polyfill.
 
 ## Basic Usage
 
@@ -147,16 +146,6 @@ chain and produces a result.
 ```
 Other terminating methods include `.forEach()`, `.count()`, and `.find()`, among
 others.
-
-All transforms and terminations which take a function as an argument, such as
-`.map()`, `.filter()`, and `.forEach()`, provide that function with the index of
-each element as the second argument, as is typical in JavaScript APIs. For
-example:
-```ts
-const result = chainFrom(["a", "bb", "ccc"])
-    .map((s, i) => s + i)
-    .toArray(); // -> ["a0", "bb1", "ccc2"]
-```
 
 For a list of all possible transformations and terminations, see the [full API
 docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api).
@@ -282,9 +271,9 @@ chainFrom([1, 2, 3, 4, 5])
     .toArray(); // -> [6, 8, 10]
 ```
 
-However, the standalone function version of this example uses a mere 2.1 kB if
+However, the standalone function version of this example uses a mere 1.64 kB if
 those are the only functions in use, compared chained version which has a
-bundled size of 11.8 kB (as of version 0.4.0, minified),
+bundled size of 11.1 kB (as of version 0.4.0, minified),
 
 ## API
 
