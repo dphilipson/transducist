@@ -1,3 +1,4 @@
+import { INIT, RESULT, STEP, VALUE } from "./propertyNames";
 import { filter, remove } from "./transducers";
 import {
     Comparator,
@@ -16,9 +17,9 @@ let countTransformer: Transformer<number, any> | undefined;
 export function count(): Transformer<number, any> {
     if (!countTransformer) {
         countTransformer = {
-            ["@@transducer/init"]: () => 0,
-            ["@@transducer/result"]: (result: number) => result,
-            ["@@transducer/step"]: (result: number) => result + 1,
+            [INIT]: () => 0,
+            [RESULT]: (result: number) => result,
+            [STEP]: (result: number) => result + 1,
         };
     }
     return countTransformer;
@@ -37,9 +38,9 @@ let firstTransformer: Transformer<any, any> | undefined;
 export function first<T>(): Transformer<T | null, T> {
     if (!firstTransformer) {
         firstTransformer = {
-            ["@@transducer/init"]: () => null,
-            ["@@transducer/result"]: (result: any) => result,
-            ["@@transducer/step"]: (_: any, input: any) => reduced(input),
+            [INIT]: () => null,
+            [RESULT]: (result: any) => result,
+            [STEP]: (_: any, input: any) => reduced(input),
         };
     }
     return firstTransformer;
@@ -48,15 +49,15 @@ export function first<T>(): Transformer<T | null, T> {
 class ForEachTransformer<T> implements Transformer<void, T> {
     constructor(private readonly f: (input: T) => void) {}
 
-    public ["@@transducer/init"]() {
+    public [INIT]() {
         return undefined;
     }
 
-    public ["@@transducer/result"]() {
+    public [RESULT]() {
         return undefined;
     }
 
-    public ["@@transducer/step"](_: void, input: T) {
+    public [STEP](_: void, input: T) {
         return this.f(input);
     }
 }
@@ -70,9 +71,9 @@ let isEmptyTransformer: Transformer<boolean, any> | undefined;
 export function isEmpty(): Transformer<boolean, any> {
     if (!isEmptyTransformer) {
         isEmptyTransformer = {
-            ["@@transducer/init"]: () => true,
-            ["@@transducer/result"]: (result: boolean) => result,
-            ["@@transducer/step"]: () => reduced(false),
+            [INIT]: () => true,
+            [RESULT]: (result: boolean) => result,
+            [STEP]: () => reduced(false),
         };
     }
     return isEmptyTransformer;
@@ -81,15 +82,15 @@ export function isEmpty(): Transformer<boolean, any> {
 class JoinToString implements CompletingTransformer<any[], string, any> {
     constructor(private readonly separator: string) {}
 
-    public ["@@transducer/init"]() {
+    public [INIT]() {
         return [];
     }
 
-    public ["@@transducer/result"](result: any[]) {
+    public [RESULT](result: any[]) {
         return result.join(this.separator);
     }
 
-    public ["@@transducer/step"](result: any[], input: any) {
+    public [STEP](result: any[], input: any) {
         result.push(input);
         return result;
     }
@@ -106,9 +107,9 @@ let isNotEmptyTransformer: Transformer<boolean, any> | undefined;
 export function some<T>(pred: (item: T) => boolean): Transformer<boolean, T> {
     if (!isNotEmptyTransformer) {
         isNotEmptyTransformer = {
-            ["@@transducer/init"]: () => false,
-            ["@@transducer/result"]: (result: boolean) => result,
-            ["@@transducer/step"]: () => reduced(true),
+            [INIT]: () => false,
+            [RESULT]: (result: boolean) => result,
+            [STEP]: () => reduced(true),
         };
     }
     return filter(pred)(isNotEmptyTransformer);
@@ -119,9 +120,9 @@ let toArrayTransformer: Transformer<any[], any> | undefined;
 export function toArray<T>(): Transformer<T[], T> {
     if (!toArrayTransformer) {
         toArrayTransformer = {
-            ["@@transducer/init"]: () => [],
-            ["@@transducer/result"]: (result: any[]) => result,
-            ["@@transducer/step"]: (result: any[], input: any) => {
+            [INIT]: () => [],
+            [RESULT]: (result: any[]) => result,
+            [STEP]: (result: any[], input: any) => {
                 result.push(input);
                 return result;
             },
@@ -136,15 +137,15 @@ class ToMap<T, K, V> implements Transformer<Map<K, V>, T> {
         private readonly getValue: (item: T) => V,
     ) {}
 
-    public ["@@transducer/init"](): Map<K, V> {
+    public [INIT](): Map<K, V> {
         return new Map();
     }
 
-    public ["@@transducer/result"](result: Map<K, V>): Map<K, V> {
+    public [RESULT](result: Map<K, V>): Map<K, V> {
         return result;
     }
 
-    public ["@@transducer/step"](result: Map<K, V>, item: T): Map<K, V> {
+    public [STEP](result: Map<K, V>, item: T): Map<K, V> {
         result.set(this.getKey(item), this.getValue(item));
         return result;
     }
@@ -168,14 +169,14 @@ class InProgressTransformer<TResult, TCompleteResult, TInput> {
             TInput
         >,
     ) {
-        this.result = xf["@@transducer/init"]();
+        this.result = xf[INIT]();
     }
 
     public step(input: TInput): void {
         if (!this.isReduced) {
-            const newResult = this.xf["@@transducer/step"](this.result, input);
+            const newResult = this.xf[STEP](this.result, input);
             if (isReduced(newResult)) {
-                this.result = newResult["@@transducer/value"];
+                this.result = newResult[VALUE];
                 this.isReduced = true;
             } else {
                 this.result = newResult;
@@ -184,7 +185,7 @@ class InProgressTransformer<TResult, TCompleteResult, TInput> {
     }
 
     public getResult(): TCompleteResult {
-        return this.xf["@@transducer/result"](this.result);
+        return this.xf[RESULT](this.result);
     }
 }
 
@@ -200,11 +201,11 @@ class ToMapGroupBy<T, K, V>
         private readonly xf: CompletingTransformer<any, V, T>,
     ) {}
 
-    public ["@@transducer/init"](): Map<K, InProgressTransformer<any, V, T>> {
+    public [INIT](): Map<K, InProgressTransformer<any, V, T>> {
         return new Map();
     }
 
-    public ["@@transducer/result"](
+    public [RESULT](
         result: Map<K, InProgressTransformer<any, V, T>>,
     ): Map<K, V> {
         const completeResult = new Map<K, V>();
@@ -216,7 +217,7 @@ class ToMapGroupBy<T, K, V>
         return completeResult;
     }
 
-    public ["@@transducer/step"](
+    public [STEP](
         result: Map<K, InProgressTransformer<any, V, T>>,
         item: T,
     ): Map<K, InProgressTransformer<any, V, T>> {
@@ -249,18 +250,15 @@ class ToObject<T, U> implements Transformer<Dictionary<U>, T> {
         private readonly getValue: (item: T) => U,
     ) {}
 
-    public ["@@transducer/init"](): Dictionary<U> {
+    public [INIT](): Dictionary<U> {
         return {};
     }
 
-    public ["@@transducer/result"](result: Dictionary<U>): Dictionary<U> {
+    public [RESULT](result: Dictionary<U>): Dictionary<U> {
         return result;
     }
 
-    public ["@@transducer/step"](
-        result: Dictionary<U>,
-        item: T,
-    ): Dictionary<U> {
+    public [STEP](result: Dictionary<U>, item: T): Dictionary<U> {
         result[this.getKey(item)] = this.getValue(item);
         return result;
     }
@@ -285,13 +283,11 @@ class ToObjectGroupBy<T, U>
         private readonly xf: CompletingTransformer<any, U, T>,
     ) {}
 
-    public ["@@transducer/init"](): Dictionary<
-        InProgressTransformer<any, U, T>
-    > {
+    public [INIT](): Dictionary<InProgressTransformer<any, U, T>> {
         return {};
     }
 
-    public ["@@transducer/result"](
+    public [RESULT](
         result: Dictionary<InProgressTransformer<any, U, T>>,
     ): Dictionary<U> {
         const completeResult: Dictionary<U> = {};
@@ -301,7 +297,7 @@ class ToObjectGroupBy<T, U>
         return completeResult;
     }
 
-    public ["@@transducer/step"](
+    public [STEP](
         result: Dictionary<InProgressTransformer<any, U, T>>,
         item: T,
     ): Dictionary<InProgressTransformer<any, U, T>> {
@@ -333,9 +329,9 @@ let toSetTransformer: Transformer<Set<any>, any> | undefined;
 export function toSet<T>(): Transformer<Set<T>, T> {
     if (!toSetTransformer) {
         toSetTransformer = {
-            ["@@transducer/init"]: () => new Set(),
-            ["@@transducer/result"]: (result: Set<any>) => result,
-            ["@@transducer/step"]: (result: Set<any>, input: any) => {
+            [INIT]: () => new Set(),
+            [RESULT]: (result: Set<any>) => result,
+            [STEP]: (result: Set<any>, input: any) => {
                 result.add(input);
                 return result;
             },
@@ -355,13 +351,10 @@ export function toAverage(): CompletingTransformer<
 > {
     if (!averageTransformer) {
         averageTransformer = {
-            ["@@transducer/init"]: () => [0, 0],
-            ["@@transducer/result"]: (result: [number, number]) =>
+            [INIT]: () => [0, 0],
+            [RESULT]: (result: [number, number]) =>
                 result[1] === 0 ? null : result[0] / result[1],
-            ["@@transducer/step"]: (
-                result: [number, number],
-                input: number,
-            ) => {
+            [STEP]: (result: [number, number], input: number) => {
                 result[0] += input;
                 result[1]++;
                 return result;
@@ -374,15 +367,15 @@ export function toAverage(): CompletingTransformer<
 class Min<T> implements Transformer<T | null, T> {
     constructor(private readonly comparator: Comparator<T>) {}
 
-    public ["@@transducer/init"]() {
+    public [INIT]() {
         return null;
     }
 
-    public ["@@transducer/result"](result: T | null) {
+    public [RESULT](result: T | null) {
         return result;
     }
 
-    public ["@@transducer/step"](result: T | null, input: T) {
+    public [STEP](result: T | null, input: T) {
         return result === null || this.comparator(input, result) < 0
             ? input
             : result;
@@ -426,9 +419,9 @@ let sumTransformer: Transformer<number, number> | undefined;
 export function toSum(): Transformer<number, number> {
     if (!sumTransformer) {
         sumTransformer = {
-            ["@@transducer/init"]: () => 0,
-            ["@@transducer/result"]: (result: number) => result,
-            ["@@transducer/step"]: (result: number, input: number) => {
+            [INIT]: () => 0,
+            [RESULT]: (result: number) => result,
+            [STEP]: (result: number, input: number) => {
                 return result + input;
             },
         };

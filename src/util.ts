@@ -1,14 +1,15 @@
+import { REDUCED, VALUE } from "./propertyNames";
 import { MaybeReduced, Reduced, Transducer } from "./types";
 
 export function reduced<T>(result: T): Reduced<T> {
     return {
-        "@@transducer/reduced": true,
-        "@@transducer/value": result,
+        [REDUCED]: true,
+        [VALUE]: result,
     };
 }
 
 export function isReduced<T>(result: MaybeReduced<T>): result is Reduced<T> {
-    return result && (result as any)["@@transducer/reduced"] === true;
+    return result && (result as any)[REDUCED] === true;
 }
 
 export function ensureReduced<T>(result: MaybeReduced<T>): Reduced<T> {
@@ -16,7 +17,7 @@ export function ensureReduced<T>(result: MaybeReduced<T>): Reduced<T> {
 }
 
 export function unreduced<T>(result: MaybeReduced<T>): T {
-    return isReduced(result) ? result["@@transducer/value"] : result;
+    return isReduced(result) ? result[VALUE] : result;
 }
 
 export function compose<T0>(): Transducer<T0, T0>;

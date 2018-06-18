@@ -1,4 +1,5 @@
 import { reduceWithFunction } from "./core";
+import { INIT, RESULT, STEP, VALUE } from "./propertyNames";
 import {
     CompletingTransformer,
     MaybeReduced,
@@ -21,7 +22,7 @@ function updateValue<T, TWrapper extends ValueWrapper<T>>(
     newValue: MaybeReduced<T>,
 ): MaybeReduced<TWrapper> {
     if (isReduced(newValue)) {
-        result.value = newValue["@@transducer/value"];
+        result.value = newValue[VALUE];
         return reduced(result);
     } else {
         result.value = newValue;
@@ -44,26 +45,21 @@ class Dedupe<TResult, TCompleteResult, TInput>
         >,
     ) {}
 
-    public ["@@transducer/init"](): DedupeState<TResult> {
-        return { last: {}, value: this.xf["@@transducer/init"]() };
+    public [INIT](): DedupeState<TResult> {
+        return { last: {}, value: this.xf[INIT]() };
     }
 
-    public ["@@transducer/result"](
-        result: DedupeState<TResult>,
-    ): TCompleteResult {
-        return this.xf["@@transducer/result"](result.value);
+    public [RESULT](result: DedupeState<TResult>): TCompleteResult {
+        return this.xf[RESULT](result.value);
     }
 
-    public ["@@transducer/step"](
+    public [STEP](
         result: DedupeState<TResult>,
         input: TInput,
     ): MaybeReduced<DedupeState<TResult>> {
         if (input !== result.last) {
             result.last = input;
-            return updateValue(
-                result,
-                this.xf["@@transducer/step"](result.value, input),
-            );
+            return updateValue(result, this.xf[STEP](result.value, input));
         } else {
             return result;
         }
@@ -87,21 +83,16 @@ class Drop<TResult, TCompleteResult, TInput>
         private readonly n: number,
     ) {}
 
-    public ["@@transducer/init"](): TResult {
-        return this.xf["@@transducer/init"]();
+    public [INIT](): TResult {
+        return this.xf[INIT]();
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
+    public [RESULT](result: TResult): TCompleteResult {
+        return this.xf[RESULT](result);
     }
 
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): MaybeReduced<TResult> {
-        return this.i++ < this.n
-            ? result
-            : this.xf["@@transducer/step"](result, input);
+    public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
+        return this.i++ < this.n ? result : this.xf[STEP](result, input);
     }
 }
 
@@ -129,34 +120,26 @@ class DropWhile<TResult, TCompleteResult, TInput>
         private readonly pred: (item: TInput) => boolean,
     ) {}
 
-    public ["@@transducer/init"](): DropWhileState<TResult> {
-        return { value: this.xf["@@transducer/init"](), isDoneDropping: false };
+    public [INIT](): DropWhileState<TResult> {
+        return { value: this.xf[INIT](), isDoneDropping: false };
     }
 
-    public ["@@transducer/result"](
-        result: DropWhileState<TResult>,
-    ): TCompleteResult {
-        return this.xf["@@transducer/result"](result.value);
+    public [RESULT](result: DropWhileState<TResult>): TCompleteResult {
+        return this.xf[RESULT](result.value);
     }
 
-    public ["@@transducer/step"](
+    public [STEP](
         result: DropWhileState<TResult>,
         input: TInput,
     ): MaybeReduced<DropWhileState<TResult>> {
         if (result.isDoneDropping) {
-            return updateValue(
-                result,
-                this.xf["@@transducer/step"](result.value, input),
-            );
+            return updateValue(result, this.xf[STEP](result.value, input));
         } else {
             if (this.pred(input)) {
                 return result;
             } else {
                 result.isDoneDropping = true;
-                return updateValue(
-                    result,
-                    this.xf["@@transducer/step"](result.value, input),
-                );
+                return updateValue(result, this.xf[STEP](result.value, input));
             }
         }
     }
@@ -177,21 +160,16 @@ class Filter<TResult, TCompleteResult, TInput>
         private readonly pred: (item: TInput) => boolean,
     ) {}
 
-    public ["@@transducer/init"](): TResult {
-        return this.xf["@@transducer/init"]();
+    public [INIT](): TResult {
+        return this.xf[INIT]();
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
+    public [RESULT](result: TResult): TCompleteResult {
+        return this.xf[RESULT](result);
     }
 
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): MaybeReduced<TResult> {
-        return this.pred(input)
-            ? this.xf["@@transducer/step"](result, input)
-            : result;
+    public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
+        return this.pred(input) ? this.xf[STEP](result, input) : result;
     }
 }
 
@@ -211,21 +189,18 @@ class FlatMap<TResult, TCompleteResult, TInput, TOutput>
         >,
         private readonly f: (item: TInput) => Iterable<TOutput>,
     ) {
-        this.step = xf["@@transducer/step"].bind(xf);
+        this.step = xf[STEP].bind(xf);
     }
 
-    public ["@@transducer/init"](): TResult {
-        return this.xf["@@transducer/init"]();
+    public [INIT](): TResult {
+        return this.xf[INIT]();
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
+    public [RESULT](result: TResult): TCompleteResult {
+        return this.xf[RESULT](result);
     }
 
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): MaybeReduced<TResult> {
+    public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
         return reduceWithFunction(this.f(input), this.step, result);
     }
 }
@@ -247,31 +222,25 @@ class Interpose<TResult, TCompleteResult, TInput>
         private readonly separator: TInput,
     ) {}
 
-    public ["@@transducer/init"](): TResult {
-        return this.xf["@@transducer/init"]();
+    public [INIT](): TResult {
+        return this.xf[INIT]();
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
+    public [RESULT](result: TResult): TCompleteResult {
+        return this.xf[RESULT](result);
     }
 
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): MaybeReduced<TResult> {
+    public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
         if (this.isStarted) {
-            const withSeparator = this.xf["@@transducer/step"](
-                result,
-                this.separator,
-            );
+            const withSeparator = this.xf[STEP](result, this.separator);
             if (isReduced(withSeparator)) {
                 return withSeparator;
             } else {
-                return this.xf["@@transducer/step"](withSeparator, input);
+                return this.xf[STEP](withSeparator, input);
             }
         } else {
             this.isStarted = true;
-            return this.xf["@@transducer/step"](result, input);
+            return this.xf[STEP](result, input);
         }
     }
 }
@@ -292,19 +261,16 @@ class MapTransformer<TResult, TCompleteResult, TInput, TOutput>
         private readonly f: (item: TInput) => TOutput,
     ) {}
 
-    public ["@@transducer/init"](): TResult {
-        return this.xf["@@transducer/init"]();
+    public [INIT](): TResult {
+        return this.xf[INIT]();
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
+    public [RESULT](result: TResult): TCompleteResult {
+        return this.xf[RESULT](result);
     }
 
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): MaybeReduced<TResult> {
-        return this.xf["@@transducer/step"](result, this.f(input));
+    public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
+        return this.xf[STEP](result, this.f(input));
     }
 }
 
@@ -332,26 +298,21 @@ class MapIndexed<TResult, TCompleteResult, TInput, TOutput>
         private readonly f: (item: TInput, index: number) => TOutput,
     ) {}
 
-    public ["@@transducer/init"](): MapIndexedState<TResult> {
-        return { value: this.xf["@@transducer/init"](), i: 0 };
+    public [INIT](): MapIndexedState<TResult> {
+        return { value: this.xf[INIT](), i: 0 };
     }
 
-    public ["@@transducer/result"](
-        result: MapIndexedState<TResult>,
-    ): TCompleteResult {
-        return this.xf["@@transducer/result"](result.value);
+    public [RESULT](result: MapIndexedState<TResult>): TCompleteResult {
+        return this.xf[RESULT](result.value);
     }
 
-    public ["@@transducer/step"](
+    public [STEP](
         result: MapIndexedState<TResult>,
         input: TInput,
     ): MaybeReduced<MapIndexedState<TResult>> {
         return updateValue(
             result,
-            this.xf["@@transducer/step"](
-                result.value,
-                this.f(input, result.i++),
-            ),
+            this.xf[STEP](result.value, this.f(input, result.i++)),
         );
     }
 }
@@ -375,27 +336,22 @@ class PartitionAll<TResult, TCompleteResult, TInput>
         private readonly n: number,
     ) {}
 
-    public ["@@transducer/init"](): TResult {
-        return this.xf["@@transducer/init"]();
+    public [INIT](): TResult {
+        return this.xf[INIT]();
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
+    public [RESULT](result: TResult): TCompleteResult {
         if (this.buffer.length > 0) {
-            result = unreduced(
-                this.xf["@@transducer/step"](result, this.buffer),
-            );
+            result = unreduced(this.xf[STEP](result, this.buffer));
             this.buffer = [];
         }
-        return this.xf["@@transducer/result"](result);
+        return this.xf[RESULT](result);
     }
 
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): MaybeReduced<TResult> {
+    public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
         this.buffer.push(input);
         if (this.buffer.length === this.n) {
-            const newResult = this.xf["@@transducer/step"](result, this.buffer);
+            const newResult = this.xf[STEP](result, this.buffer);
             this.buffer = [];
             return newResult;
         } else {
@@ -436,27 +392,27 @@ class PartitionBy<TResult, TCompleteResult, TInput>
         private readonly f: (item: TInput) => any,
     ) {}
 
-    public ["@@transducer/init"](): PartitionByState<TResult, TInput> {
+    public [INIT](): PartitionByState<TResult, TInput> {
         return {
-            value: this.xf["@@transducer/init"](),
+            value: this.xf[INIT](),
             buffer: [],
             lastKey: INITIAL_LAST_KEY,
         };
     }
 
-    public ["@@transducer/result"](
+    public [RESULT](
         result: PartitionByState<TResult, TInput>,
     ): TCompleteResult {
         if (result.buffer.length > 0) {
             result.value = unreduced(
-                this.xf["@@transducer/step"](result.value, result.buffer),
+                this.xf[STEP](result.value, result.buffer),
             );
             result.buffer = [];
         }
-        return this.xf["@@transducer/result"](result.value);
+        return this.xf[RESULT](result.value);
     }
 
-    public ["@@transducer/step"](
+    public [STEP](
         result: PartitionByState<TResult, TInput>,
         input: TInput,
     ): MaybeReduced<PartitionByState<TResult, TInput>> {
@@ -467,10 +423,7 @@ class PartitionBy<TResult, TCompleteResult, TInput>
         if (lastKey === INITIAL_LAST_KEY || lastKey === key) {
             newResult = result;
         } else {
-            newResult = updateValue(
-                result,
-                this.xf["@@transducer/step"](value, buffer),
-            );
+            newResult = updateValue(result, this.xf[STEP](value, buffer));
             unreduced(newResult).buffer = [];
         }
         unreduced(newResult).buffer.push(input);
@@ -495,23 +448,20 @@ class Take<TResult, TCompleteResult, TInput>
         private readonly n: number,
     ) {}
 
-    public ["@@transducer/init"](): TResult {
-        return this.xf["@@transducer/init"]();
+    public [INIT](): TResult {
+        return this.xf[INIT]();
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
+    public [RESULT](result: TResult): TCompleteResult {
+        return this.xf[RESULT](result);
     }
 
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): MaybeReduced<TResult> {
+    public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
         // Written this way to avoid pulling one more element than necessary.
         if (this.n <= 0) {
             return reduced(result);
         }
-        const next = this.xf["@@transducer/step"](result, input);
+        const next = this.xf[STEP](result, input);
         return this.i++ < this.n - 1 ? next : ensureReduced(next);
     }
 }
@@ -540,25 +490,20 @@ class TakeNth<TResult, TCompleteResult, TInput>
         private readonly n: number,
     ) {}
 
-    public ["@@transducer/init"](): TakeNthState<TResult> {
-        return { value: this.xf["@@transducer/init"](), i: 0 };
+    public [INIT](): TakeNthState<TResult> {
+        return { value: this.xf[INIT](), i: 0 };
     }
 
-    public ["@@transducer/result"](
-        result: TakeNthState<TResult>,
-    ): TCompleteResult {
-        return this.xf["@@transducer/result"](result.value);
+    public [RESULT](result: TakeNthState<TResult>): TCompleteResult {
+        return this.xf[RESULT](result.value);
     }
 
-    public ["@@transducer/step"](
+    public [STEP](
         result: TakeNthState<TResult>,
         input: TInput,
     ): MaybeReduced<TakeNthState<TResult>> {
         return result.i++ % this.n === 0
-            ? updateValue(
-                  result,
-                  this.xf["@@transducer/step"](result.value, input),
-              )
+            ? updateValue(result, this.xf[STEP](result.value, input))
             : result;
     }
 }
@@ -583,20 +528,17 @@ class TakeWhile<TResult, TCompleteResult, TInput>
         private readonly pred: (item: TInput) => boolean,
     ) {}
 
-    public ["@@transducer/init"](): TResult {
-        return this.xf["@@transducer/init"]();
+    public [INIT](): TResult {
+        return this.xf[INIT]();
     }
 
-    public ["@@transducer/result"](result: TResult): TCompleteResult {
-        return this.xf["@@transducer/result"](result);
+    public [RESULT](result: TResult): TCompleteResult {
+        return this.xf[RESULT](result);
     }
 
-    public ["@@transducer/step"](
-        result: TResult,
-        input: TInput,
-    ): MaybeReduced<TResult> {
+    public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
         return this.pred(input)
-            ? this.xf["@@transducer/step"](result, input)
+            ? this.xf[STEP](result, input)
             : reduced(result);
     }
 }

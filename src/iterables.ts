@@ -1,3 +1,4 @@
+import { STEP, VALUE } from "./propertyNames";
 import { toArray } from "./reducers";
 import { Transducer, Transformer } from "./types";
 import { isReduced } from "./util";
@@ -129,13 +130,10 @@ class TransducerIterable<TInput, TOutput> implements Iterator<TOutput> {
                 if (done) {
                     return { done } as any;
                 } else {
-                    let outValues = this.xfToArray["@@transducer/step"](
-                        [],
-                        value,
-                    );
+                    let outValues = this.xfToArray[STEP]([], value);
                     if (isReduced(outValues)) {
                         this.hasSeenEnd = true;
-                        outValues = outValues["@@transducer/value"];
+                        outValues = outValues[VALUE];
                     }
                     this.upcoming = new ArrayIterator(outValues);
                 }

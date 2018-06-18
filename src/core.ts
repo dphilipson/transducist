@@ -1,4 +1,5 @@
 import { getIterator } from "./iterables";
+import { INIT, RESULT, STEP } from "./propertyNames";
 import {
     CompletingTransformer,
     MaybeReduced,
@@ -47,10 +48,10 @@ function reduceWithTransformer<TResult, TCompleteResult, TInput>(
 ): TCompleteResult {
     const uncompleteResult = reduceWithFunction(
         collection,
-        f["@@transducer/step"].bind(f),
-        f["@@transducer/init"](),
+        f[STEP].bind(f),
+        f[INIT](),
     );
-    return f["@@transducer/result"](unreduced(uncompleteResult));
+    return f[RESULT](unreduced(uncompleteResult));
 }
 
 export function reduceWithFunction<TResult, TInput>(
@@ -76,20 +77,20 @@ export function reduceWithFunction<TResult, TInput>(
 
 class ReducerWrappingTransformer<TResult, TInput>
     implements Transformer<TResult, TInput> {
-    public readonly "@@transducer/step": QuittingReducer<TResult, TInput>;
+    public readonly [STEP]: QuittingReducer<TResult, TInput>;
 
     constructor(
         f: QuittingReducer<TResult, TInput>,
         private readonly initialValue: TResult,
     ) {
-        this["@@transducer/step"] = f;
+        this[STEP] = f;
     }
 
-    public ["@@transducer/init"](): TResult {
+    public [INIT](): TResult {
         return this.initialValue;
     }
 
-    public ["@@transducer/result"](result: TResult): TResult {
+    public [RESULT](result: TResult): TResult {
         return result;
     }
 }
