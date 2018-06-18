@@ -33,6 +33,9 @@
   * [`.joinToString(separator)`](#jointostringseparator)
   * [`.some(pred)`](#somepred)
   * [`.toArray()`](#toarray)
+  * [`.toMap(getKey, getValue)`](#tomapgetkey-getvalue)
+  * [`.toObject(getKey, getValue)`](#toobjectgetkey-getvalue)
+  * [`.toSet()`](#toset)
   * [`.toIterator()`](#toiterator)
   * [`.reduce(reducer, intialValue?)`](#reducereducer-intialvalue)
 - [Reducers](#reducers)
@@ -40,12 +43,14 @@
   * [`toAverage()`](#toaverage)
   * [`toMin(comparator?)`](#tomincomparator)
   * [`toMax(comparator?)`](#tomaxcomparator)
-  * [`toObject()`](#toobject)
 - [Utility functions](#utility-functions)
   * [`isReduced(result)`](#isreducedresult)
-  * [`makeTransducer(f: (reducer, result, input, index) => result)`](#maketransducerf-reducer-result-input-index--result)
   * [`rangeIterator(start?, end, step?)`](#rangeiteratorstart-end-step)
   * [`reduced(result)`](#reducedresult)
+- [Tree-shakeable API](#tree-shakeable-api)
+  * [`compose(f1, f2, ...)`](#composef1-f2-)
+  * [`transduce(collection, transducer, transformer)`](#transducecollection-transducer-transformer)
+  * [`lazyTransduce(collection, transducer)`](#lazytransducecollection-transducer)
 
 <!-- tocstop -->
 
@@ -591,12 +596,32 @@ also provides standalone functions with the same behavior as the chain, for the
 purposes of reducing bundle size. In particular, all chain methods (except
 `toIterator()`) have a standalone function of the same name.
 
-For those familiar with the transducer protocol, the standalone functions
-corresponding to the transform methods (e.g. `map()`, `take()`) return a
-transducer, while the standalone functions correspoding to the end of the chain
-return a transformer instead.
+For those familiar with the [transducer
+protocol](https://github.com/cognitect-labs/transducers-js#transformer-protocol),
+the standalone functions corresponding to the transform methods (e.g. `map()`,
+`take()`) each produce a transducer, while the standalone functions
+corresponding to the end of the chain (e.g. `toArray()`, `count()`) each produce
+a transformer.
 
-In addition to the standalone functions whose names match the methods listed above, the tree-shakeable API is completed by the functions below. An example of their use is as follows:
+In addition to the standalone functions whose names match the methods listed above, the tree-shakeable API is completed by the functions below.
+
+### `compose(f1, f2, ...)`
+
+Composes any number of transducers together to produce a new transducer. This is
+actually just ordinary function composition, although its TypeScript typings are
+for transducers in particular.
+
+### `transduce(collection, transducer, transformer)`
+
+(Or: `transduce(collection, transducer, reducer, initialValue)`)
+
+Starting from the collection, applies the transformations specified by the transducer and then uses the transformer to construct a final result.
+
+Rather than providing a transformer as the third argument, this may also be
+called by passing an ordinary reducer function and an initial value as the final
+two arguments, where a reducer is a plain function of the form `(acc, x) => acc`.
+
+Example:
 
 ```ts
 import { filter, map, toArray, transduce } from "transducist";
@@ -608,8 +633,7 @@ transduce(
         map(x => 2 * x),
     ),
     toArray(),
-);
-// -> [6, 8, 10]
+); // -> [6, 8, 10]
 ```
 
 which is equivalent to the chained version:
@@ -623,25 +647,11 @@ chainFrom([1, 2, 3, 4, 5])
     .toArray(); // -> [6, 8, 10]
 ```
 
-### `compose(f1, f2, ...)`
-
-Composes any number of transducers together to produce a new transducer. This is
-actually just ordinary function composition, although it is given TypeScript
-typings to be used with transducers in particular.
-
-### `transduce(collection, transducer, transformer)`
-
-(Or: `transduce(collection, transducer, reducer, initialValue)`)
-
-Starting from the collection, applies the transformations specified by the transducer and then uses the transformer to construct a final result.
-
-Rather than providing a transformer as the third argument, this may also be
-called by passing an ordinary reducer function and an initial value as the final
-two arguments, where a reducer is a plain function of the form `(acc, x) => acc`.
-
 ### `lazyTransduce(collection, transducer)`
 
-Returns an iterator which lazily performs the transformations specified by the transducer. This is the standalone version of ending a chain with `toIterator()`. That is, the following are equivalent:
+Returns an iterator which lazily performs the transformations specified by the
+transducer. This is the standalone version of ending a chain with
+`toIterator()`. That is, the following are equivalent:
 
 ```ts
 import { filter, map, lazyTransduce } from "transducist";

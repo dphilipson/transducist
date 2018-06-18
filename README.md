@@ -253,10 +253,10 @@ This is a good way to factor out a transformation for reuse.
 
 If you are using a bundler which supports tree-shaking (e.g. Webpack 4+, Rollup)
 and are looking to decrease bundle size, Transducist also provides an alternate
-API to allow you to only pay a bundle size cost for the functions you actually
-use, which incidentally is similar to that provided by more typical transducer
-libraries. All chain methods are also available as standalone functions and can
-be used as follows:
+API to allow you to pay only for the functions you actually use, which
+incidentally is similar to the API provided by more typical transducer
+libraries. All chain methods are also available as standalone
+functions and can be used as follows:
 
 ```ts
 import { filter, map, toArray, transduce } from "transducist";
@@ -268,8 +268,7 @@ transduce(
         map(x => 2 * x),
     ),
     toArray(),
-);
-// -> [6, 8, 10]
+); // -> [6, 8, 10]
 ```
 
 which is equivalent to the fluent version:
@@ -283,9 +282,9 @@ chainFrom([1, 2, 3, 4, 5])
     .toArray(); // -> [6, 8, 10]
 ```
 
-However, while the chained version of this example adds 11.8 kB to bundle size
-(as of version 0.4.0, minified), the standalone function version adds a mere 2.1
-kB if those are the only functions you use.
+However, the standalone function version of this example uses a mere 2.1 kB if
+those are the only functions in use, compared chained version which has a
+bundled size of 11.8 kB (as of version 0.4.0, minified),
 
 ## API
 

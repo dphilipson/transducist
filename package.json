@@ -31,7 +31,7 @@
         "build": "yarn run clean && tsc -p tsconfig.build.json && ./markClassesPure.sh",
         "clean": "rm -rf dist/*",
         "format": "prettier --write",
-        "generate-toc": "markdown-toc -i *.md && true",
+        "generate-toc": "markdown-toc -i *.md && markdown-toc -i docs/*.md && true",
         "jest": "jest",
         "jest-watch": "yarn run jest --watch",
         "lint": "tslint --project .",
