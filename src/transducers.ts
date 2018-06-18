@@ -312,6 +312,56 @@ export function map<T, U>(f: (item: T) => U): Transducer<T, U> {
     return xf => new MapTransformer(xf, f);
 }
 
+interface MapIndexedState<T> extends ValueWrapper<T> {
+    i: number;
+}
+
+class MapIndexed<TResult, TCompleteResult, TInput, TOutput>
+    implements
+        CompletingTransformer<
+            MapIndexedState<TResult>,
+            TCompleteResult,
+            TInput
+        > {
+    constructor(
+        private readonly xf: CompletingTransformer<
+            TResult,
+            TCompleteResult,
+            TOutput
+        >,
+        private readonly f: (item: TInput, index: number) => TOutput,
+    ) {}
+
+    public ["@@transducer/init"](): MapIndexedState<TResult> {
+        return { value: this.xf["@@transducer/init"](), i: 0 };
+    }
+
+    public ["@@transducer/result"](
+        result: MapIndexedState<TResult>,
+    ): TCompleteResult {
+        return this.xf["@@transducer/result"](result.value);
+    }
+
+    public ["@@transducer/step"](
+        result: MapIndexedState<TResult>,
+        input: TInput,
+    ): MaybeReduced<MapIndexedState<TResult>> {
+        return updateValue(
+            result,
+            this.xf["@@transducer/step"](
+                result.value,
+                this.f(input, result.i++),
+            ),
+        );
+    }
+}
+
+export function mapIndexed<T, U>(
+    f: (item: T, index: number) => U,
+): Transducer<T, U> {
+    return xf => new MapIndexed(xf, f);
+}
+
 class PartitionAll<TResult, TCompleteResult, TInput>
     implements CompletingTransformer<TResult, TCompleteResult, TInput> {
     private buffer: TInput[] = [];
@@ -504,8 +554,7 @@ class TakeNth<TResult, TCompleteResult, TInput>
         result: TakeNthState<TResult>,
         input: TInput,
     ): MaybeReduced<TakeNthState<TResult>> {
-        const i = result.i++;
-        return i % this.n === 0
+        return result.i++ % this.n === 0
             ? updateValue(
                   result,
                   this.xf["@@transducer/step"](result.value, input),

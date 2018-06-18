@@ -157,6 +157,15 @@ describe("map()", () => {
     });
 });
 
+describe("mapIndexed()", () => {
+    it("should map over elements with their indices", () => {
+        const result = chainFrom([10, 10, 10])
+            .mapIndexed((x, i) => x * i)
+            .toArray();
+        expect(result).toEqual([0, 10, 20]);
+    });
+});
+
 describe("partitionAll()", () => {
     it("should group elements by the specified size", () => {
         const result = chainFrom([1, 2, 3, 4, 5])
