@@ -274,7 +274,8 @@ export function interpose<T>(separator: T): Transducer<T, T> {
     return xf => new Interpose(xf, separator);
 }
 
-class Map<TResult, TCompleteResult, TInput, TOutput>
+// Not named Map to avoid confusion with the native Map class.
+class MapTransformer<TResult, TCompleteResult, TInput, TOutput>
     implements CompletingTransformer<TResult, TCompleteResult, TInput> {
     private readonly needsIndex: boolean;
     private i = 0;
@@ -310,7 +311,7 @@ class Map<TResult, TCompleteResult, TInput, TOutput>
 }
 
 export function map<T, U>(f: (item: T, i: number) => U): Transducer<T, U> {
-    return xf => new Map(xf, f);
+    return xf => new MapTransformer(xf, f);
 }
 
 class PartitionAll<TResult, TCompleteResult, TInput>

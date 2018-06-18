@@ -70,6 +70,17 @@ export function compose<T0, T1, T2, T3, T4, T5, T6, T7, T8>(
     f6: Transducer<T6, T7>,
     f7: Transducer<T7, T8>,
 ): Transducer<T0, T8>;
+export function compose<T0, T1, T2, T3, T4, T5, T6, T7, T8>(
+    f0: Transducer<T0, T1>,
+    f1: Transducer<T1, T2>,
+    f2: Transducer<T2, T3>,
+    f3: Transducer<T3, T4>,
+    f4: Transducer<T4, T5>,
+    f5: Transducer<T5, T6>,
+    f6: Transducer<T6, T7>,
+    f7: Transducer<T7, T8>,
+    ...rest: Array<Transducer<any, any>>
+): Transducer<T0, any>;
 export function compose(...fs: any[]): any {
     return (x: any) => {
         let result = x;

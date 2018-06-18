@@ -10,7 +10,9 @@ import {
     joinToString,
     some,
     toArray,
+    toMap,
     toObject,
+    toSet,
 } from "./reducers";
 import {
     dedupe,
@@ -64,10 +66,15 @@ export interface TransformChain<T> {
     joinToString(separator: string): string;
     some(pred: (item: T, index: number) => boolean): boolean;
     toArray(): T[];
+    toMap<K, V>(
+        getKey: (item: T, index: number) => K,
+        getValue: (item: T, index: number) => V,
+    ): Map<K, V>;
     toObject<U>(
         getKey: (item: T, index: number) => string,
         getValue: (item: T, index: number) => U,
     ): { [key: string]: U };
+    toSet(): Set<T>;
 
     toIterator(): IterableIterator<T>;
 }
@@ -274,11 +281,22 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(toArray());
     }
 
+    public toMap<K, V>(
+        getKey: (item: T, index: number) => K,
+        getValue: (item: T, index: number) => V,
+    ): Map<K, V> {
+        return this.reduce(toMap(getKey, getValue));
+    }
+
     public toObject<U>(
         getKey: (item: T, index: number) => string,
         getValue: (item: T, index: number) => U,
     ): { [key: string]: U } {
         return this.reduce(toObject(getKey, getValue));
+    }
+
+    public toSet(): Set<T> {
+        return this.reduce(toSet());
     }
 
     public toIterator(): IterableIterator<T> {

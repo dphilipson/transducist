@@ -546,6 +546,41 @@ describe("some()", () => {
     });
 });
 
+describe("toArray()", () => {
+    const input = ["a", "bb", "ccc"];
+
+    it("should return an input array if no transforms", () => {
+        const result = chainFrom(input).toArray();
+        expect(result).toEqual(input);
+    });
+
+    it("should convert iterable input to an array", () => {
+        const iterator = input[Symbol.iterator]();
+        const result = chainFrom(iterator).toArray();
+        expect(result).toEqual(input);
+    });
+});
+
+describe("toMap()", () => {
+    it("should make a map using the provided functions", () => {
+        const input: Array<[boolean, number]> = [[false, 0], [true, 1]];
+        const result = chainFrom(input).toMap(x => x[0], x => x[1]);
+        expect(result).toEqual(new Map(input));
+    });
+
+    it("should replace earlier values with later ones at the same key", () => {
+        const input: Array<[string, number]> = [["a", 1], ["b", 1], ["a", 2]];
+        const result = chainFrom(input).toMap(x => x[0], x => x[1]);
+        expect(result).toEqual(new Map([["a", 2], ["b", 1]]));
+    });
+
+    it("should pass the index to the functions as the second argument", () => {
+        const input = ["a", "b", "c"];
+        const result = chainFrom(input).toMap((s, i) => s + i, (_, i) => i);
+        expect(result).toEqual(new Map([["a0", 0], ["b1", 1], ["c2", 2]]));
+    });
+});
+
 describe("toObject()", () => {
     it("should make an object using the provided functions", () => {
         const input = ["a", "bb", "ccc"];
@@ -566,18 +601,12 @@ describe("toObject()", () => {
     });
 });
 
-describe("toArray()", () => {
-    const input = ["a", "bb", "ccc"];
-
-    it("should return an input array if no transforms", () => {
-        const result = chainFrom(input).toArray();
-        expect(result).toEqual(input);
-    });
-
-    it("should convert iterable input to an array", () => {
-        const iterator = input[Symbol.iterator]();
-        const result = chainFrom(iterator).toArray();
-        expect(result).toEqual(input);
+describe("toSet()", () => {
+    it("should produce a set", () => {
+        const result = chainFrom([0, 1, 3])
+            .map(n => n % 3)
+            .toSet();
+        expect(result).toEqual(new Set([0, 1]));
     });
 });
 

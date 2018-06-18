@@ -17,6 +17,7 @@ Status](https://travis-ci.org/dphilipson/transducist.svg?branch=master)](https:/
   * [Using custom transducers](#using-custom-transducers)
   * [Using custom reductions](#using-custom-reductions)
   * [Creating a standalone transducer](#creating-a-standalone-transducer)
+- [Bundle Size and Tree-Shaking](#bundle-size-and-tree-shaking)
 - [API](#api)
 
 <!-- tocstop -->
@@ -68,19 +69,6 @@ Provide an API for using transducers that is…
   standalone transducers which may be used elsewhere by other libraries that
   incorporate transducers into their API.
 
-* **…convenient with TypeScript IDEs**. Typical transducer libraries, such as
-  [transducers.js](https://github.com/jlongster/transducers.js) and
-  [transducers-js](https://github.com/cognitect-labs/transducers-js), are hard
-  to use with TypeScript. They depend on calling `compose` to glue transducers
-  together, which if typed correctly has an ugly type signature with many type
-  parameters and overloads, and which generates cryptic TypeScript errors if
-  something is amiss. Instead, we use a familiar chaining API which grants easy
-  autocompletion in an IDE, as well as aiding readability.
-
-  Of course, this library can be consumed without TypeScript as well. You will
-  lose the typechecking and autocomplete benefits, but keep all the other
-  advantages.
-
 * **…typesafe** when used in a TypeScript project. Avoid the type fuzziness that
   is present in other transform chaining APIs. For example, under Lodash's type
   definitions, the following typechecks:
@@ -102,6 +90,13 @@ Provide an API for using transducers that is…
   some benchmarks. That post is also a great description of some other
   advantages of transducers.
 
+* **…tree-shakeable** if needed. While the chaining API is most convenient,
+  Transducist also exposes an alternate API that allows you to pick and choose
+  which operations you will be using, and then let your bundler (such as Webpack
+  4+ or Rollup) strip out the parts you aren't using, reducing the size cost to
+  well below 4 kB. See the section on
+  [tree-shaking](#bundle-size-and-treeshaking) for stats and details.
+
 ## Installation
 
 With Yarn:
@@ -112,16 +107,21 @@ With NPM:
 ```
 npm install --save transducist
 ```
-This library works fine on ES5 without any polyfills or transpilation, but its
-TypeScript definitions depend on ES6 definitions for the `Iterable` type. If you
-use TypeScript in your project, you must make definitions for `Iterable` and
-`Iterator` available by doing one of the following:
+This library, with the exception of the `toSet` and `toMap` functions, works
+fine on ES5 without any polyfills or transpilation, but its TypeScript
+definitions depend on ES6 definitions for the `Iterable`, `Map`, and `Set`
+types. If you use TypeScript in your project, you must make definitions for
+these types available by doing one of the following:
 
 * In `tsconfig.json`, set `"target"` to `"es6"` or higher.
-* In `tsconfig.json`, set `"libs"` to include `"es2015.iterable"` or something
-  that includes it.
+* In `tsconfig.json`, set `"libs"` to include `"es2015.iterable"` and
+  `"es2015.collections"` or something that includes them.
 * Add the definitions by some other means, such as importing types for
   `es6-shim`.
+
+Furthermore, the methods `toSet` and `toMap` assume the presence of ES6 `Set`
+and `Map` classes in your environment. If you wish to use these methods, you
+must ensure your environment has these classes or provide a polyfill.
 
 ## Basic Usage
 
@@ -248,6 +248,44 @@ const result = chainFrom([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     .toArray(); // -> [1, 3, 5]
 ```
 This is a good way to factor out a transformation for reuse.
+
+## Bundle Size and Tree-Shaking
+
+If you are using a bundler which supports tree-shaking (e.g. Webpack 4+, Rollup)
+and are looking to decrease bundle size, Transducist also provides an alternate
+API to allow you to only pay a bundle size cost for the functions you actually
+use, which incidentally is similar to that provided by more typical transducer
+libraries. All chain methods are also available as standalone functions and can
+be used as follows:
+
+```ts
+import { filter, map, toArray, transduce } from "transducist";
+
+transduce(
+    [1, 2, 3, 4, 5],
+    compose(
+        filter((x: number) => x > 2),
+        map(x => 2 * x),
+    ),
+    toArray(),
+);
+// -> [6, 8, 10]
+```
+
+which is equivalent to the fluent version:
+
+```ts
+import { chainFrom } from "transducist";
+
+chainFrom([1, 2, 3, 4, 5])
+    .filter(x => x > 2)
+    .map(x => 2 * x)
+    .toArray(); // -> [6, 8, 10]
+```
+
+However, while the chained version of this example adds 11.8 kB to bundle size
+(as of version 0.4.0, minified), the standalone function version adds a mere 2.1
+kB if those are the only functions you use.
 
 ## API
 
