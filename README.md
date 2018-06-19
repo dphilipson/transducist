@@ -18,6 +18,7 @@ Status](https://travis-ci.org/dphilipson/transducist.svg?branch=master)](https:/
   * [Using custom reductions](#using-custom-reductions)
   * [Creating a standalone transducer](#creating-a-standalone-transducer)
 - [Bundle Size and Tree-Shaking](#bundle-size-and-tree-shaking)
+- [Benchmarks](#benchmarks)
 - [API](#api)
 
 <!-- tocstop -->
@@ -82,13 +83,10 @@ Provide an API for using transducers that is…
   const goodSum = chainFrom([1, 2, 3]).reduce(toSum()); // -> 6
   ```
 
-* **…fast**! Transducist is a thin wrapper on top of
-  [transducers-js](https://github.com/cognitect-labs/transducers-js) and is
-  therefore very efficient. See this [blog
-  post](http://jlongster.com/Transducers.js-Round-2-with-Benchmarks) by the
-  author of [transducers.js](https://github.com/jlongster/transducers.js) for
-  some benchmarks. That post is also a great description of some other
-  advantages of transducers.
+* **…fast**! Transducist performs efficient computations by never creating more
+  objects than necessary. [See the
+  benchmarks](https://github.com/dphilipson/transducist/blob/master/docs/benchmarks.md#benchmarks)
+  for details.
 
 * **…tree-shakeable** if needed. While the chaining API is most convenient,
   Transducist also exposes an alternate API that allows you to pick and choose
@@ -107,9 +105,11 @@ With NPM:
 ```
 npm install --save transducist
 ```
-This library, with the exception of the functions which relate to `Set` and `Map`, works fine on ES5 without any polyfills or transpilation, but its
-TypeScript definitions depend on ES6 definitions for the `Iterable` type. If you use TypeScript in your project, you must make definitions
-for these types available by doing one of the following:
+This library, with the exception of the functions which relate to `Set` and
+`Map`, works fine on ES5 without any polyfills or transpilation, but its
+TypeScript definitions depend on ES6 definitions for the `Iterable` type. If you
+use TypeScript in your project, you must make definitions for these types
+available by doing one of the following:
 
 * In `tsconfig.json`, set `"target"` to `"es6"` or higher.
 * In `tsconfig.json`, set `"libs"` to include `"es2015.iterable"` or something
@@ -147,7 +147,7 @@ chain and produces a result.
 Other terminating methods include `.forEach()`, `.count()`, and `.find()`, among
 others.
 
-For a list of all possible transformations and terminations, see the [full API
+For a list of all possible transformations and terminations, [see the full API
 docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api).
 
 ## Advanced Usage
@@ -244,8 +244,8 @@ If you are using a bundler which supports tree-shaking (e.g. Webpack 4+, Rollup)
 and are looking to decrease bundle size, Transducist also provides an alternate
 API to allow you to pay only for the functions you actually use, which
 incidentally is similar to the API provided by more typical transducer
-libraries. All chain methods are also available as standalone
-functions and can be used as follows:
+libraries. All chain methods are also available as standalone functions and can
+be used as follows:
 
 ```ts
 import { filter, map, toArray, transduce } from "transducist";
@@ -273,11 +273,20 @@ chainFrom([1, 2, 3, 4, 5])
 
 However, the standalone function version of this example uses a mere 1.64 kB if
 those are the only functions in use, compared chained version which has a
-bundled size of 11.1 kB (as of version 0.4.0, minified),
+bundled size of 11.1 kB (as of version 0.4.0, minified).
+
+For details, [see the tree-shaking
+API](https://github.com/dphilipson/transducist/blob/master/docs/api.md#treeshaking-api)
+section of the API docs.
+
+## Benchmarks
+
+[View the
+benchmarks.](https://github.com/dphilipson/transducist/blob/master/docs/benchmarks.md#benchmarks)
 
 ## API
 
-View the [full API
-docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api).
+[View the full API
+docs.](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api)
 
 Copyright © 2017 David Philipson
