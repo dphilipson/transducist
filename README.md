@@ -93,7 +93,7 @@ Provide an API for using transducers that is…
   which operations you will be using, and then let your bundler (such as Webpack
   4+ or Rollup) strip out the parts you aren't using, reducing the size cost to
   well below 4 kB. See the section on
-  [tree-shaking](#bundle-size-and-treeshaking) for stats and details.
+  [tree-shaking](#bundle-size-and-tree-shaking) for stats and details.
 
 ## Installation
 
@@ -128,8 +128,8 @@ Import with
 ```ts
 import { chainFrom } from "transducist";
 ```
-Start a chain by calling `chainFrom()` on any iterable, including an array or a
-string.
+Start a chain by calling `chainFrom()` on any iterable, such as an array, a
+string, or an ES6 `Set`.
 ```ts
 const result = chainFrom(["a", "bb", "ccc", "dddd", "eeeee"])
 ```
@@ -145,7 +145,8 @@ chain and produces a result.
     .toArray(); // -> ["A", "CCC"]
 ```
 Other terminating methods include `.forEach()`, `.count()`, and `.find()`, among
-others.
+others. For a particularly interesting one, see
+[`.toMapGroupBy()`](https://github.com/dphilipson/transducist/blob/master/docs/api.md#tomapgroupbygetkey-transformer).
 
 For a list of all possible transformations and terminations, [see the full API
 docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api).
@@ -253,7 +254,7 @@ import { filter, map, toArray, transduce } from "transducist";
 transduce(
     [1, 2, 3, 4, 5],
     compose(
-        filter((x: number) => x > 2),
+        filter(x => x > 2),
         map(x => 2 * x),
     ),
     toArray(),
@@ -276,7 +277,7 @@ those are the only functions in use, compared chained version which has a
 bundled size of 11.1 kB (as of version 0.4.0, minified).
 
 For details, [see the tree-shaking
-API](https://github.com/dphilipson/transducist/blob/master/docs/api.md#treeshaking-api)
+API](https://github.com/dphilipson/transducist/blob/master/docs/api.md#tree-shakeable-api)
 section of the API docs.
 
 ## Benchmarks

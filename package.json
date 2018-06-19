@@ -41,7 +41,7 @@
         "test": "yarn run lint && tsc && yarn run jest"
     },
     "lint-staged": {
-        "*.json": [
+        "*.{js,json}": [
             "yarn run format",
             "git add"
         ],

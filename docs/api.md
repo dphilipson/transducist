@@ -415,12 +415,12 @@ chainFrom(authors).toMap(a => a.id, a => a.books.length);
 
 ### `.toMapGroupBy(getKey, transformer?)`
 
-Produces an ES6 `Map` by grouping together under each key all elements for which
-`getKey` returned that key. By default, each key corresponds to an array of the
-elements which produced that key.
+Produces an ES6 `Map` by grouping together all elements for which `getKey`
+returns the same value under that key. By default, each key corresponds to an
+array of the elements which produced that key.
 
 Optionally, a transformer may be passed as the second argument to configure the
-reduction behavior of the values. All chain ending methods in this secion other
+reduction behavior of the values. All chain-ending methods in this section other
 than `.toIterator()` have a standalone variant which produces a transformer (for
 details, see the section [Tree-shakeable API](#tree-shakeable-api)), which opens
 many possibilities. Some advanced examples are shown below.
@@ -475,12 +475,12 @@ chainFrom(authors).toObject(a => a.id, a => a.books.length);
 
 ### `.toObjectGroupBy(getKey, transformer?)`
 
-Produces an object by grouping together under each key all elements for which
-`getKey` returned that key. By default, each key corresponds to an array of the
-elements which produced that key.
+Produces an object by grouping together all elements for which `getKey` returns
+the same value under that key. By default, each key corresponds to an array of
+the elements which produced that key.
 
 Optionally, a transformer may be passed as the second argument to configure the
-reduction behavior of the values. All chain ending methods in this secion other
+reduction behavior of the values. All chain-ending methods in this section other
 than `.toIterator()` have a standalone variant which produces a transformer (for
 details, see the section [Tree-shakeable API](#tree-shakeable-api)), which opens
 many possibilities. Some advanced examples are shown below.
@@ -709,7 +709,7 @@ import { filter, map, toArray, transduce } from "transducist";
 transduce(
     [1, 2, 3, 4, 5],
     compose(
-        filter((x: number) => x > 2),
+        filter(x => x > 2),
         map(x => 2 * x),
     ),
     toArray(),
@@ -739,10 +739,9 @@ import { filter, map, lazyTransduce } from "transducist";
 lazyTransduce(
     [1, 2, 3, 4, 5],
     compose(
-        filter((x: number) => x > 2),
+        filter(x => x > 2),
         map(x => 2 * x),
     ),
-    toArray(),
 );
 ```
 ```ts
