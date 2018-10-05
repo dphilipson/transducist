@@ -30,24 +30,24 @@
     "scripts": {
         "build": "yarn run clean && tsc -p tsconfig.build.json && ./scripts/mark-classes-pure.sh",
         "clean": "rm -rf dist/*",
-        "format": "prettier --write",
-        "generate-toc": "scripts/markdown-toc-all.sh *.md docs/*.md",
+        "format-file": "prettier --write",
+        "format": "git ls-files | egrep '\\.(js(on)?|scss|tsx?)?$' | xargs yarn run format-file",
+        "generate-toc": "git ls-files | egrep '\\.md$' | xargs scripts/markdown-toc-all.sh",
         "jest": "jest",
-        "jest-watch": "yarn run jest --watch",
+        "lint-file": "tslint",
         "lint": "tslint --project .",
-        "lint-fix": "yarn run lint --fix",
         "precommit": "lint-staged",
         "prepublishOnly": "yarn run test && yarn run build",
         "test": "yarn run lint && tsc && yarn run jest"
     },
     "lint-staged": {
-        "*.{js,json}": [
-            "yarn run format",
+        "**/*.{js,json}": [
+            "yarn run format-file",
             "git add"
         ],
-        "*.{ts,tsx}": [
-            "yarn run lint-fix",
-            "yarn run format",
+        "**/*.ts": [
+            "yarn run format-file",
+            "yarn run lint-file --fix",
             "git add"
         ],
         "*.md": [
