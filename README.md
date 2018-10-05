@@ -43,8 +43,8 @@ and work stops early once 100 people are found.
 You might be thinking that this looks very similar to [chains in
 Lodash](https://lodash.com/docs/4.17.4#chain) or various other libraries that
 offer a similar API. But this library is different because it's implemented with
-transducers and exposes all the benefits of using transducers, such as being
-able to easily add new transformation types to the middle of a chain and
+transducers and exposes all benefits of the transducer protocol, such as being
+able to easily add novel transformation types to the middle of a chain and
 producing logic applicable to any data structure, not just arrays.
 
 Never heard of a transducer? Check the links in the
@@ -70,6 +70,11 @@ Provide an API for using transducers that is…
   standalone transducers which may be used elsewhere by other libraries that
   incorporate transducers into their API.
 
+* **…fast**! Transducist performs efficient computations by never creating more
+  objects than necessary. [See the
+  benchmarks](https://github.com/dphilipson/transducist/blob/master/docs/benchmarks.md#benchmarks)
+  for details.
+
 * **…typesafe** when used in a TypeScript project. Avoid the type fuzziness that
   is present in other transform chaining APIs. For example, under Lodash's type
   definitions, the following typechecks:
@@ -83,16 +88,11 @@ Provide an API for using transducers that is…
   const goodSum = chainFrom([1, 2, 3]).reduce(toSum()); // -> 6
   ```
 
-* **…fast**! Transducist performs efficient computations by never creating more
-  objects than necessary. [See the
-  benchmarks](https://github.com/dphilipson/transducist/blob/master/docs/benchmarks.md#benchmarks)
-  for details.
-
 * **…tree-shakeable** if needed. While the chaining API is most convenient,
   Transducist also exposes an alternate API that allows you to pick and choose
   which operations you will be using, and then let your bundler (such as Webpack
   4+ or Rollup) strip out the parts you aren't using, reducing the size cost to
-  well below 4 kB. See the section on
+  well below 2 kB. See the section on
   [tree-shaking](#bundle-size-and-tree-shaking) for stats and details.
 
 ## Installation
@@ -145,7 +145,7 @@ chain and produces a result.
     .toArray(); // -> ["A", "CCC"]
 ```
 Other terminating methods include `.forEach()`, `.count()`, and `.find()`, among
-others. For a particularly interesting one, see
+many others. For a particularly interesting one, see
 [`.toMapGroupBy()`](https://github.com/dphilipson/transducist/blob/master/docs/api.md#tomapgroupbygetkey-transformer).
 
 For a list of all possible transformations and terminations, [see the full API
@@ -176,7 +176,9 @@ const result = chainFrom([[1, 2], [3, 4, 5], [6]])
 ```
 As an example of implementing a custom transducer, suppose we want to implement
 a "replace" operation, in which we provide two values and all instances of the
-first value are replaced by the second one. We can do so as follows:
+first value are replaced by the second one (note that in a real program, this
+effect could be more easily achieved using using the built-in `.map()`
+transform). We can do so as follows:
 ```ts
 // Imports not needed if not using TypeScript.
 import {
@@ -243,7 +245,7 @@ This is a good way to factor out a transformation for reuse.
 
 If you are using a bundler which supports tree-shaking (e.g. Webpack 4+, Rollup)
 and are looking to decrease bundle size, Transducist also provides an alternate
-API to allow you to pay only for the functions you actually use, which
+API to allow you to only pay for the functions you actually use, which
 incidentally is similar to the API provided by more typical transducer
 libraries. All chain methods are also available as standalone functions and can
 be used as follows:
@@ -273,7 +275,7 @@ chainFrom([1, 2, 3, 4, 5])
 ```
 
 However, the standalone function version of this example uses a mere 1.64 kB if
-those are the only functions in use, compared chained version which has a
+those are the only functions in use, compared to the chained version which has a
 bundled size of 11.1 kB (as of version 0.4.0, minified).
 
 For details, [see the tree-shaking
