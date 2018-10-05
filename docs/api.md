@@ -671,10 +671,11 @@ returned by a reducer or a transformer to short-circuit computation.
 
 ## Tree-shakeable API
 
-As discussed in the README section "Bundle Size and Tree-Shaking," Transducist
-also provides standalone functions with the same behavior as the chain, for the
-purposes of reducing bundle size. In particular, all chain methods (except
-`toIterator()`) have a standalone function of the same name.
+As discussed in the README section [Bundle Size and
+Tree-Shaking](https://github.com/dphilipson/transducist#bundle-size-and-tree-shaking),
+Transducist also provides standalone functions with the same behavior as the
+chain, for the purposes of reducing bundle size. In particular, all chain
+methods (except `toIterator()`) have a standalone function of the same name.
 
 For those familiar with the [transducer
 protocol](https://github.com/cognitect-labs/transducers-js#transformer-protocol),
