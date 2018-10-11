@@ -17,7 +17,7 @@ Status](https://travis-ci.org/dphilipson/transducist.svg?branch=master)](https:/
   * [Using custom transducers](#using-custom-transducers)
   * [Using custom reductions](#using-custom-reductions)
   * [Creating a standalone transducer](#creating-a-standalone-transducer)
-- [Bundle Size and Tree-Shaking](#bundle-size-and-tree-shaking)
+- [Bundle Size and Tree Shaking](#bundle-size-and-tree-shaking)
 - [Benchmarks](#benchmarks)
 - [API](#api)
 
@@ -88,12 +88,12 @@ Provide an API for using transducers that is…
   const goodSum = chainFrom([1, 2, 3]).reduce(toSum()); // -> 6
   ```
 
-* **…tree-shakeable** if needed. While the chaining API is most convenient,
+* **…tree shakeable** if needed. While the chaining API is most convenient,
   Transducist also exposes an alternate API that allows you to pick and choose
   which operations you will be using, and then let your bundler (such as Webpack
   4+ or Rollup) strip out the parts you aren't using, reducing the size cost to
   well below 2 kB. See the section on
-  [tree-shaking](#bundle-size-and-tree-shaking) for stats and details.
+  [tree shaking](#bundle-size-and-tree-shaking) for stats and details.
 
 ## Installation
 
@@ -241,9 +241,9 @@ const result = chainFrom([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 ```
 This is a good way to factor out a transformation for reuse.
 
-## Bundle Size and Tree-Shaking
+## Bundle Size and Tree Shaking
 
-If you are using a bundler which supports tree-shaking (e.g. Webpack 4+, Rollup)
+If you are using a bundler which supports tree shaking (e.g. Webpack 4+, Rollup)
 and are looking to decrease bundle size, Transducist also provides an alternate
 API to allow you to only pay for the functions you actually use, which
 incidentally is similar to the API provided by more typical transducer
@@ -278,7 +278,7 @@ However, the standalone function version of this example uses a mere 1.64 kB if
 those are the only functions in use, compared to the chained version which has a
 bundled size of 11.1 kB (as of version 0.4.0, minified).
 
-For details, [see the tree-shaking
+For details, [see the tree shaking
 API](https://github.com/dphilipson/transducist/blob/master/docs/api.md#tree-shakeable-api)
 section of the API docs.
 

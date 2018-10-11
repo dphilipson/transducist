@@ -10,7 +10,8 @@ import { isReduced, reduced } from "./util";
 
 // Transformers with no parameters, such as the one for count() here, are
 // created the first time they are called so they can be tree shaken if unused.
-// Tree shaking does not remove top-level object literal constants.
+// Tree shaking does not remove top-level object literal constants if they have
+// computed keys.
 
 let countTransformer: Transformer<number, any> | undefined;
 

@@ -15,7 +15,7 @@
   * [`.flatMap(f)`](#flatmapf)
   * [`.interpose(separator)`](#interposeseparator)
   * [`.map(f)`](#mapf)
-  * [`.mapIndexed(f, i)`](#mapindexedf-i)
+  * [`.mapIndexed(f)`](#mapindexedf)
   * [`.partitionAll(n)`](#partitionalln)
   * [`.partitionBy(f)`](#partitionbyf)
   * [`.remove(pred)`](#removepred)
@@ -50,10 +50,10 @@
   * [`isReduced(result)`](#isreducedresult)
   * [`rangeIterator(start?, end, step?)`](#rangeiteratorstart-end-step)
   * [`reduced(result)`](#reducedresult)
-- [Tree-shakeable API](#tree-shakeable-api)
+- [Tree shakeable API](#tree-shakeable-api)
   * [`compose(f1, f2, ...)`](#composef1-f2-)
-  * [`transduce(collection, transducer, transformer)`](#transducecollection-transducer-transformer)
-  * [`lazyTransduce(collection, transducer)`](#lazytransducecollection-transducer)
+  * [`transduce(iterable, transducer, transformer)`](#transduceiterable-transducer-transformer)
+  * [`lazyTransduce(iterable, transducer)`](#lazytransduceiterable-transducer)
 
 <!-- tocstop -->
 
@@ -65,12 +65,13 @@ Starts a chain. Any number of transformation methods may be added, after which a
 termination method should be called to produce a result. No computation is done
 until a termination method is called.
 
-The argument may be any iterable, including an array or a string. This is back
-compatible with older browsers which did not implement the `Iterable` interface.
+The argument may be any iterable, such as an array, a string, or an ES6 `Set`.
+This is back-compatible with older browsers which did not implement the
+`Iterable` interface for arrays and strings.
 
 ### `transducerBuilder()`
 
-Starts a chain for constructing a new transducer. Any number of trasformation
+Starts a chain for constructing a new transducer. Any number of transformation
 methods may be added, after which `.build()` should be called to produce a
 transducer.
 
@@ -162,7 +163,7 @@ chainFrom([1, 2, 3])
     .toArray(); // -> [2, 4, 6]
 ```
 
-### `.mapIndexed(f, i)`
+### `.mapIndexed(f)`
 
 Transforms each element by applying `f` to the element and the current index in the sequence. For example:
 
@@ -202,7 +203,7 @@ chainFrom(["a", "ab", "bc", "c", "cd", "cde"])
 Like `filter()`, but removes the elements matching `pred` instead. For example:
 
 ```ts
-chainFrom([1, 2, 3])
+chainFrom([1, 2, 3, 4])
     .remove(x => x % 2 === 1)
     .toArray(); // -> [2, 4]
 ```
@@ -264,7 +265,7 @@ protocol](https://githube.com/cognitect-labs/transducers-js#the-transducer-proto
 meaning it is a function which takes a `Transformer` and returns another
 `Transformer`. This is the most general transformation, and it is used by this
 library internally to implement all the others. For example usage, see the
-[Advanced Usage](#advanced-usage) section.
+[Advanced Usage](#advanced-usage) section of the main readme.
 
 ## Ending a chain
 
@@ -302,8 +303,8 @@ chainFrom([1, 2, 3, 4, 5])
 ### `.find(pred)`
 
 Returns the first element of the result which satisfies the predicate `pred`, or
-`null` if no such element exists. Note that this is equivalent to
-`.filter(pred).first()`.
+`null` if no such element exists. Short-circuits computation once a match is
+found. Note that this is equivalent to `.filter(pred).first()`.
 
 Example:
 
@@ -315,9 +316,8 @@ chainFrom([1, 2, 3, 4, 5])
 
 ### `.first()`
 
-Returns the first element of the result, or `null` if there are no other
-elements. Short-circuits computation, so no more work is done than necessary to
-get the first element.
+Returns the first element of the result, or `null` if there are no elements.
+Short-circuits computation after reading the first element.
 
 Example:
 
@@ -341,7 +341,8 @@ chainFrom([1, 2, 3, 4, 5])
 
 ### `.isEmpty()`
 
-Returns `true` if there are any elements, else `false`. For example:
+Returns `true` if there are any elements, else `false`. Short-circuits
+computation after reading one element. For example:
 
 ```ts
 chainFrom([1, 2, 3, 4, 5])
@@ -422,7 +423,7 @@ array of the elements which produced that key.
 Optionally, a transformer may be passed as the second argument to configure the
 reduction behavior of the values. All chain-ending methods in this section other
 than `.toIterator()` have a standalone variant which produces a transformer (for
-details, see the section [Tree-shakeable API](#tree-shakeable-api)), which opens
+details, see the section [Tree shakeable API](#tree-shakeable-api)), which opens
 many possibilities. Some advanced examples are shown below.
 
 Similar to [`.toObjectGroupBy()`](#toobjectgroupbygetkey-transformer), except
@@ -486,7 +487,7 @@ details, see the section [Tree-shakeable API](#tree-shakeable-api)), which opens
 many possibilities. Some advanced examples are shown below.
 
 Similar to [`.toMapGroupBy()`](#tomapgroupbygetkey-transformer), except
-that the `getKey` function required to return a string.
+that the `getKey` function is required to return a string.
 
 Examples:
 
@@ -669,10 +670,10 @@ Returns a reduced value of `result`, as described by the [transducer
 protocol](https://github.com/cognitect-labs/transducers-js#reduced). Can be
 returned by a reducer or a transformer to short-circuit computation.
 
-## Tree-shakeable API
+## Tree shakeable API
 
-As discussed in the README section [Bundle Size and
-Tree-Shaking](https://github.com/dphilipson/transducist#bundle-size-and-tree-shaking),
+As discussed in the readme section [Bundle Size and
+Tree Shaking](https://github.com/dphilipson/transducist#bundle-size-and-tree-shaking),
 Transducist also provides standalone functions with the same behavior as the
 chain, for the purposes of reducing bundle size. In particular, all chain
 methods (except `toIterator()`) have a standalone function of the same name.
@@ -684,7 +685,8 @@ the standalone functions corresponding to the transform methods (e.g. `map()`,
 corresponding to the end of the chain (e.g. `toArray()`, `count()`) each produce
 a transformer.
 
-In addition to the standalone functions whose names match the methods listed above, the tree-shakeable API is completed by the functions below.
+In addition to the standalone functions whose names match the methods listed
+above, the tree-shakeable API is completed by the functions below.
 
 ### `compose(f1, f2, ...)`
 
@@ -692,11 +694,12 @@ Composes any number of transducers together to produce a new transducer. This is
 actually just ordinary function composition, although its TypeScript typings are
 for transducers in particular.
 
-### `transduce(collection, transducer, transformer)`
+### `transduce(iterable, transducer, transformer)`
 
-(Or: `transduce(collection, transducer, reducer, initialValue)`)
+(Or: `transduce(iterable, transducer, reducer, initialValue)`)
 
-Starting from the collection, applies the transformations specified by the transducer and then uses the transformer to construct a final result.
+Starting from the iterable, applies the transformations specified by the
+transducer and then uses the transformer to construct a final result.
 
 Rather than providing a transformer as the third argument, this may also be
 called by passing an ordinary reducer function and an initial value as the final
@@ -728,7 +731,7 @@ chainFrom([1, 2, 3, 4, 5])
     .toArray(); // -> [6, 8, 10]
 ```
 
-### `lazyTransduce(collection, transducer)`
+### `lazyTransduce(iterable, transducer)`
 
 Returns an iterator which lazily performs the transformations specified by the
 transducer. This is the standalone version of ending a chain with
