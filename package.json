@@ -31,7 +31,7 @@
         "build": "yarn run clean && tsc -p tsconfig.build.json && ./scripts/mark-classes-pure.sh",
         "clean": "rm -rf dist/*",
         "format-file": "prettier --write",
-        "format": "git ls-files | egrep '\\.(js(on)?|scss|tsx?)?$' | xargs yarn run format-file",
+        "format": "git ls-files | egrep '\\.(js(on)?|md|scss|tsx?)?$' | xargs yarn run format-file",
         "generate-toc": "git ls-files | egrep '\\.md$' | xargs scripts/markdown-toc-all.sh",
         "jest": "jest",
         "lint-file": "tslint",
@@ -50,12 +50,13 @@
             "git add"
         ],
         "**/*.ts": [
-            "yarn run format-file",
             "yarn run lint-file --fix",
+            "yarn run format-file",
             "git add"
         ],
         "*.md": [
             "./scripts/markdown-toc-all.sh",
+            "yarn run format-file",
             "git add"
         ]
     },

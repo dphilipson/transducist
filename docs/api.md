@@ -4,56 +4,56 @@
 
 <!-- toc -->
 
-- [Starting a chain](#starting-a-chain)
-  * [`chainFrom(iterable)`](#chainfromiterable)
-  * [`transducerBuilder()`](#transducerbuilder)
-- [Transformation methods](#transformation-methods)
-  * [`.dedupe()`](#dedupe)
-  * [`.drop(n)`](#dropn)
-  * [`.dropWhile(pred)`](#dropwhilepred)
-  * [`.filter(pred)`](#filterpred)
-  * [`.flatMap(f)`](#flatmapf)
-  * [`.interpose(separator)`](#interposeseparator)
-  * [`.map(f)`](#mapf)
-  * [`.mapIndexed(f)`](#mapindexedf)
-  * [`.partitionAll(n)`](#partitionalln)
-  * [`.partitionBy(f)`](#partitionbyf)
-  * [`.remove(pred)`](#removepred)
-  * [`.removeAbsent()`](#removeabsent)
-  * [`.take(n)`](#taken)
-  * [`.takeNth(n)`](#takenthn)
-  * [`.takeWhile(pred)`](#takewhilepred)
-  * [`.compose(transducer)`](#composetransducer)
-- [Ending a chain](#ending-a-chain)
-  * [`.count()`](#count)
-  * [`.every(pred)`](#everypred)
-  * [`.find(pred)`](#findpred)
-  * [`.first()`](#first)
-  * [`.forEach(f)`](#foreachf)
-  * [`.isEmpty()`](#isempty)
-  * [`.joinToString(separator)`](#jointostringseparator)
-  * [`.some(pred)`](#somepred)
-  * [`.toArray()`](#toarray)
-  * [`.toMap(getKey, getValue)`](#tomapgetkey-getvalue)
-  * [`.toMapGroupBy(getKey, transformer?)`](#tomapgroupbygetkey-transformer)
-  * [`.toObject(getKey, getValue)`](#toobjectgetkey-getvalue)
-  * [`.toObjectGroupBy(getKey, transformer?)`](#toobjectgroupbygetkey-transformer)
-  * [`.toSet()`](#toset)
-  * [`.toIterator()`](#toiterator)
-  * [`.reduce(reducer, intialValue?)`](#reducereducer-intialvalue)
-- [Reducers](#reducers)
-  * [`toSum()`](#tosum)
-  * [`toAverage()`](#toaverage)
-  * [`toMin(comparator?)`](#tomincomparator)
-  * [`toMax(comparator?)`](#tomaxcomparator)
-- [Utility functions](#utility-functions)
-  * [`isReduced(result)`](#isreducedresult)
-  * [`rangeIterator(start?, end, step?)`](#rangeiteratorstart-end-step)
-  * [`reduced(result)`](#reducedresult)
-- [Tree shakeable API](#tree-shakeable-api)
-  * [`compose(f1, f2, ...)`](#composef1-f2-)
-  * [`transduce(iterable, transducer, transformer)`](#transduceiterable-transducer-transformer)
-  * [`lazyTransduce(iterable, transducer)`](#lazytransduceiterable-transducer)
+-   [Starting a chain](#starting-a-chain)
+    -   [`chainFrom(iterable)`](#chainfromiterable)
+    -   [`transducerBuilder()`](#transducerbuilder)
+-   [Transformation methods](#transformation-methods)
+    -   [`.dedupe()`](#dedupe)
+    -   [`.drop(n)`](#dropn)
+    -   [`.dropWhile(pred)`](#dropwhilepred)
+    -   [`.filter(pred)`](#filterpred)
+    -   [`.flatMap(f)`](#flatmapf)
+    -   [`.interpose(separator)`](#interposeseparator)
+    -   [`.map(f)`](#mapf)
+    -   [`.mapIndexed(f)`](#mapindexedf)
+    -   [`.partitionAll(n)`](#partitionalln)
+    -   [`.partitionBy(f)`](#partitionbyf)
+    -   [`.remove(pred)`](#removepred)
+    -   [`.removeAbsent()`](#removeabsent)
+    -   [`.take(n)`](#taken)
+    -   [`.takeNth(n)`](#takenthn)
+    -   [`.takeWhile(pred)`](#takewhilepred)
+    -   [`.compose(transducer)`](#composetransducer)
+-   [Ending a chain](#ending-a-chain)
+    -   [`.count()`](#count)
+    -   [`.every(pred)`](#everypred)
+    -   [`.find(pred)`](#findpred)
+    -   [`.first()`](#first)
+    -   [`.forEach(f)`](#foreachf)
+    -   [`.isEmpty()`](#isempty)
+    -   [`.joinToString(separator)`](#jointostringseparator)
+    -   [`.some(pred)`](#somepred)
+    -   [`.toArray()`](#toarray)
+    -   [`.toMap(getKey, getValue)`](#tomapgetkey-getvalue)
+    -   [`.toMapGroupBy(getKey, transformer?)`](#tomapgroupbygetkey-transformer)
+    -   [`.toObject(getKey, getValue)`](#toobjectgetkey-getvalue)
+    -   [`.toObjectGroupBy(getKey, transformer?)`](#toobjectgroupbygetkey-transformer)
+    -   [`.toSet()`](#toset)
+    -   [`.toIterator()`](#toiterator)
+    -   [`.reduce(reducer, intialValue?)`](#reducereducer-intialvalue)
+-   [Reducers](#reducers)
+    -   [`toSum()`](#tosum)
+    -   [`toAverage()`](#toaverage)
+    -   [`toMin(comparator?)`](#tomincomparator)
+    -   [`toMax(comparator?)`](#tomaxcomparator)
+-   [Utility functions](#utility-functions)
+    -   [`isReduced(result)`](#isreducedresult)
+    -   [`rangeIterator(start?, end, step?)`](#rangeiteratorstart-end-step)
+    -   [`reduced(result)`](#reducedresult)
+-   [Tree shakeable API](#tree-shakeable-api)
+    -   [`compose(f1, f2, ...)`](#composef1-f2-)
+    -   [`transduce(iterable, transducer, transformer)`](#transduceiterable-transducer-transformer)
+    -   [`lazyTransduce(iterable, transducer)`](#lazytransduceiterable-transducer)
 
 <!-- tocstop -->
 
@@ -165,7 +165,8 @@ chainFrom([1, 2, 3])
 
 ### `.mapIndexed(f)`
 
-Transforms each element by applying `f` to the element and the current index in the sequence. For example:
+Transforms each element by applying `f` to the element and the current index in
+the sequence. For example:
 
 ```ts
 chainFrom(["a", "b", "c"])
@@ -395,8 +396,9 @@ Returns an array of the results. See any of the above examples.
 Returns an ES6 `Map`, each of whose key-value pairs is generated by calling the
 provided funtions on each element in the result. If multiple elements produce
 the same key, then the value produced by the latest element will override the
-earlier ones. Similar to [`.toObject()`](#toobjectgetkey-getvalue), except that the
-`getKey` function is permitted to return any type of value, not just a string.
+earlier ones. Similar to [`.toObject()`](#toobjectgetkey-getvalue), except that
+the `getKey` function is permitted to return any type of value, not just a
+string.
 
 This function assumes that `Map` is present in your environment. **If you call
 this function, you are responsible for providing a polyfill if your environment
@@ -437,20 +439,22 @@ does not natively support `Map`.**
 Examples:
 
 ```ts
-chainFrom(["a", "b", "aa", "aaa", "bc"])
-    .toMapGroupBy(s => s[0]);
+chainFrom(["a", "b", "aa", "aaa", "bc"]).toMapGroupBy(s => s[0]);
 // -> Map{ "a" -> ["a", "aa", "aaa"], "b" -> ["b", "bc"] }
 
-chainFrom(["a", "b", "aa", "aaa", "bc"])
-    .toMapGroupBy(s => s[0], count());
+chainFrom(["a", "b", "aa", "aaa", "bc"]).toMapGroupBy(s => s[0], count());
 // -> Map{ "a" -> 3, "b" -> 2 }
 
-chainFrom(["a", "b", "aa", "aaa", "bc"])
-    .toMapGroupBy(s => s[0], some(s => s.length === 3));
+chainFrom(["a", "b", "aa", "aaa", "bc"]).toMapGroupBy(
+    s => s[0],
+    some(s => s.length === 3),
+);
 // -> Map{ "a" -> true, "b" -> false }
 
-chainFrom(["a", "b", "aa", "aaa", "bc"])
-    .toMapGroupBy(s => s[0], map((s: string) => s.length)(toAverage()));
+chainFrom(["a", "b", "aa", "aaa", "bc"]).toMapGroupBy(
+    s => s[0],
+    map((s: string) => s.length)(toAverage()),
+);
 // -> Map{ "a" -> 2, "b" -> 1.5 }
 ```
 
@@ -486,26 +490,28 @@ than `.toIterator()` have a standalone variant which produces a transformer (for
 details, see the section [Tree-shakeable API](#tree-shakeable-api)), which opens
 many possibilities. Some advanced examples are shown below.
 
-Similar to [`.toMapGroupBy()`](#tomapgroupbygetkey-transformer), except
-that the `getKey` function is required to return a string.
+Similar to [`.toMapGroupBy()`](#tomapgroupbygetkey-transformer), except that the
+`getKey` function is required to return a string.
 
 Examples:
 
 ```ts
-chainFrom(["a", "b", "aa", "aaa", "bc"])
-    .toObjectGroupBy(s => s[0]);
+chainFrom(["a", "b", "aa", "aaa", "bc"]).toObjectGroupBy(s => s[0]);
 // -> { a: ["a", "aa", "aaa"], b: ["b", "bc"] }
 
-chainFrom(["a", "b", "aa", "aaa", "bc"])
-    .toObjectGroupBy(s => s[0], count());
+chainFrom(["a", "b", "aa", "aaa", "bc"]).toObjectGroupBy(s => s[0], count());
 // -> { a: 3, b: 2 }
 
-chainFrom(["a", "b", "aa", "aaa", "bc"])
-    .toObjectGroupBy(s => s[0], some(s => s.length === 3));
+chainFrom(["a", "b", "aa", "aaa", "bc"]).toObjectGroupBy(
+    s => s[0],
+    some(s => s.length === 3),
+);
 // -> { a: true, b: false }
 
-chainFrom(["a", "b", "aa", "aaa", "bc"])
-    .toMapGroupBy(s => s[0], map((s: string) => s.length)(toAverage()));
+chainFrom(["a", "b", "aa", "aaa", "bc"]).toMapGroupBy(
+    s => s[0],
+    map((s: string) => s.length)(toAverage()),
+);
 // -> { a: 2, b: 1.5 }
 ```
 
@@ -672,8 +678,8 @@ returned by a reducer or a transformer to short-circuit computation.
 
 ## Tree shakeable API
 
-As discussed in the readme section [Bundle Size and
-Tree Shaking](https://github.com/dphilipson/transducist#bundle-size-and-tree-shaking),
+As discussed in the readme section [Bundle Size and Tree
+Shaking](https://github.com/dphilipson/transducist#bundle-size-and-tree-shaking),
 Transducist also provides standalone functions with the same behavior as the
 chain, for the purposes of reducing bundle size. In particular, all chain
 methods (except `toIterator()`) have a standalone function of the same name.
@@ -692,7 +698,7 @@ above, the tree-shakeable API is completed by the functions below.
 
 Composes any number of transducers together to produce a new transducer. This is
 actually just ordinary function composition, although its TypeScript typings are
-for transducers in particular.
+specialized for transducers in particular.
 
 ### `transduce(iterable, transducer, transformer)`
 
@@ -708,7 +714,7 @@ two arguments, where a reducer is a plain function of the form `(acc, x) => acc`
 Example:
 
 ```ts
-import { filter, map, toArray, transduce } from "transducist";
+import { compose, filter, map, toArray, transduce } from "transducist";
 
 transduce(
     [1, 2, 3, 4, 5],
@@ -738,7 +744,7 @@ transducer. This is the standalone version of ending a chain with
 [`.toIterator()`](#toiterator). That is, the following are equivalent:
 
 ```ts
-import { filter, map, lazyTransduce } from "transducist";
+import { compose, filter, map, lazyTransduce } from "transducist";
 
 lazyTransduce(
     [1, 2, 3, 4, 5],
@@ -748,6 +754,7 @@ lazyTransduce(
     ),
 );
 ```
+
 ```ts
 import { chainFrom } from "transducist";
 
