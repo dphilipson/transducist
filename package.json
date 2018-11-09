@@ -1,6 +1,6 @@
 {
     "name": "transducist",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Ergonomic JavaScript/TypeScript transducers for beginners and experts.",
     "main": "dist/index.js",
     "types": "dist/index",
