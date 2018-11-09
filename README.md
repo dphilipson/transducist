@@ -81,12 +81,16 @@ Provide an API for using transducers that is…
     fully typesafe without requiring you to manually specify type parameters
     everywhere.
 
+-   **…small**. Transducist is less than 4kB gzipped, and can be made even
+    smaller through tree shaking.
+
 -   **…tree shakeable** if needed. While the chaining API is most convenient,
     Transducist also exposes an alternate API that allows you to pick and choose
     which operations you will be using, and then let your bundler (such as
-    Webpack 4+ or Rollup) strip out the parts you aren't using, reducing the
-    size cost to well below 2 kB. See the section on [tree
-    shaking](#bundle-size-and-tree-shaking) for stats and details.
+    Webpack 4+ or Rollup) strip out the parts you aren't using. This can reduce
+    the cost in bundle size to well below 2 kB even before gzipping. See the
+    section on [tree shaking](#bundle-size-and-tree-shaking) for stats and
+    details.
 
 ## Installation
 
@@ -259,9 +263,10 @@ chainFrom([1, 2, 3, 4, 5])
     .toArray(); // -> [6, 8, 10]
 ```
 
-However, the standalone function version of this example uses a mere 1.64 kB if
-those are the only functions in use, compared to the chained version which has a
-bundled size of 11.1 kB (as of version 0.4.0, minified).
+However, the standalone function version of this example adds a mere 1.64 kB to
+bundle size if those are the only functions in use, compared to the chained
+version which adds 11.1 kB (as of version 1.0.0, minified but not gzipped).
+After gzipping, both versions are below 4kB.
 
 For details, [see the tree shaking
 API](https://github.com/dphilipson/transducist/blob/master/docs/api.md#tree-shakeable-api)
