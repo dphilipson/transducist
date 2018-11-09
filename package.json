@@ -5,6 +5,7 @@
     "main": "dist/index.js",
     "types": "dist/index",
     "files": [
+        "cjs/",
         "dist/"
     ],
     "sideEffects": false,
@@ -28,7 +29,7 @@
     "author": "David Philipson <david.philipson@gmail.com> (http://dphil.me)",
     "license": "MIT",
     "scripts": {
-        "build": "yarn run clean && tsc -p tsconfig.build.json && ./scripts/mark-classes-pure.sh",
+        "build": "yarn run clean && tsc -p tsconfig.build-es.json && tsc -p tsconfig.build-cjs.json && ./scripts/mark-classes-pure.sh",
         "clean": "rm -rf dist/*",
         "format-file": "prettier --write",
         "format": "git ls-files | egrep '\\.(js(on)?|md|scss|tsx?)?$' | xargs yarn run format-file",

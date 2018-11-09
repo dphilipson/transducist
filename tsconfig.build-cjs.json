@@ -3,7 +3,7 @@
         "declaration": true,
         "inlineSources": true,
         "noEmit": false,
-        "outDir": "dist",
+        "outDir": "cjs",
         "sourceMap": true
     },
     "exclude": ["__tests__/**/*"],

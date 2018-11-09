@@ -8,4 +8,4 @@
 # Intentionally removes an extra space to keep the same length, to maintain
 # accuracy of sourcemaps.
 
-find dist | grep \.js$ | xargs perl -p -i -e 's~/\*\* \@class \*/ ~/\*\*\@__PURE__\*/~g'
+find {src,dist} | grep \.js$ | xargs perl -p -i -e 's~/\*\* \@class \*/ ~/\*\*\@__PURE__\*/~g'
