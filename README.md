@@ -107,7 +107,7 @@ With NPM:
 npm install --save transducist
 ```
 
-If running in a Node environemnt, make sure to check the note [ES Modules and
+If running in a Node environment, make sure to check the note [ES Modules and
 Node](#es-modules-and-node) below.
 
 This library, with the exception of the functions which relate to `Set` and
