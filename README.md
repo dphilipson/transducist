@@ -83,15 +83,7 @@ Provide an API for using transducers that is…
     everywhere.
 
 -   **…small**. Transducist is less than 4kB gzipped, and can be made even
-    smaller through tree shaking.
-
--   **…tree shakeable** if needed. While the chaining API is most convenient,
-    Transducist also exposes an alternate API that allows you to pick and choose
-    which operations you will be using, and then let your bundler (such as
-    Webpack 4+ or Rollup) strip out the parts you aren't using. This can reduce
-    the cost in bundle size to well below 2 kB even before gzipping. See the
-    section on [tree shaking](#bundle-size-and-tree-shaking) for stats and
-    details.
+    smaller through [tree shaking](#bundle-size-and-tree-shaking).
 
 ## Installation
 
@@ -104,7 +96,7 @@ yarn add transducist
 With NPM:
 
 ```
-npm install --save transducist
+npm install transducist
 ```
 
 If running in a Node environment, make sure to check the note [ES Modules and
@@ -268,9 +260,9 @@ chainFrom([1, 2, 3, 4, 5])
 ```
 
 However, the standalone function version of this example adds a mere 1.64 kB to
-bundle size if those are the only functions in use, compared to the chained
-version which adds 11.1 kB (as of version 1.0.0, minified but not gzipped).
-After gzipping, both versions are below 4kB.
+bundle size (pre-gzip), compared to the chained version which adds 11.1 kB (as
+of version 1.0.0). Note that after gzipping, the fluent version is below 4kB as
+well.
 
 For details, [see the tree shaking
 API](https://github.com/dphilipson/transducist/blob/master/docs/api.md#tree-shakeable-api)
@@ -278,12 +270,13 @@ section of the API docs.
 
 ## ES Modules and Node
 
-Transducist is distributed with ES module syntax (i.e. `import`/`export`, not
-`require()`) because doing so is required to take advantage of tree shaking. If
-you're running in a Node environment or your bundler is so old that it doesn't
-understand this syntax, you may encounter runtime errors complaining about
-unexpected tokens in `import` statements. To resolve this, use the CommonJS
-version of this library instead by importing from `transducist/cjs`:
+Transducist is distributed with ES module syntax (i.e. `import`/`export`,
+instead of `require()`/`module.exports`) because doing so is required to take
+advantage of tree shaking. If you're running in a Node environment or your
+bundler is so old that it doesn't understand this syntax, you may encounter
+runtime errors complaining about unexpected tokens in `import` statements. To
+resolve this, use the CommonJS version of this library instead by importing from
+`transducist/cjs`:
 
 ```ts
 const { chainFrom } = require("transducist/cjs");
