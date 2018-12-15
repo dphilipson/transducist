@@ -282,8 +282,8 @@ Transducist is distributed with ES module syntax (i.e. `import`/`export`, not
 `require()`) because doing so is required to take advantage of tree shaking. If
 you're running in a Node environment or your bundler is so old that it doesn't
 understand this syntax, you may encounter runtime errors complaining about
-unexpected tokens in `import` statements. To resolve this, use a CommonJS
-version of this library by importing from `transducist/cjs` instead:
+unexpected tokens in `import` statements. To resolve this, use the CommonJS
+version of this library instead by importing from `transducist/cjs`:
 
 ```ts
 const { chainFrom } = require("transducist/cjs");
