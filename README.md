@@ -31,8 +31,7 @@ This library will let you write code that looks like this:
 ```ts
 // Let's find 100 people who have a parent named Brad who runs Haskell projects
 // so we can ask them about their dads Brads' monads.
-const result = chainFrom(allProjects)
-    .filter(project => project.language === "Haskell")
+const result = chainFrom(haskellProjects)
     .map(project => project.owner)
     .filter(owner => owner.name === "Brad")
     .flatMap(owner => owner.children)
