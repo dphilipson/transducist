@@ -262,7 +262,7 @@ chainFrom([1, 2, 3, 4, 5])
 
 Add an arbitrary transducer to the chain. `transducer` should be a function
 which implements the [transducer
-protocol](https://githube.com/cognitect-labs/transducers-js#the-transducer-protocol),
+protocol](https://github.com/cognitect-labs/transducers-js#the-transducer-protocol),
 meaning it is a function which takes a `Transformer` and returns another
 `Transformer`. This is the most general transformation, and it is used by this
 library internally to implement all the others. For example usage, see the
