@@ -1,7 +1,10 @@
 {
     "compilerOptions": {
+        "declaration": true,
+        "inlineSources": true,
         "noEmit": false,
-        "outDir": "dist/cjs"
+        "outDir": "dist/esm",
+        "sourceMap": true
     },
     "exclude": ["__tests__/**/*"],
     "extends": "./tsconfig.json"

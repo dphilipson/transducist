@@ -18,7 +18,6 @@ Status](https://travis-ci.org/dphilipson/transducist.svg?branch=master)](https:/
     -   [Using custom reductions](#using-custom-reductions)
     -   [Creating a standalone transducer](#creating-a-standalone-transducer)
 -   [Bundle Size and Tree Shaking](#bundle-size-and-tree-shaking)
--   [ES Modules and Node](#es-modules-and-node)
 -   [Benchmarks](#benchmarks)
 -   [API](#api)
 
@@ -97,9 +96,6 @@ With NPM:
 ```
 npm install transducist
 ```
-
-If running in a Node environment, make sure to check the note [ES Modules and
-Node](#es-modules-and-node) below.
 
 This library, with the exception of the functions which relate to `Set` and
 `Map`, works fine on ES5 without any polyfills or transpilation, but its
@@ -266,20 +262,6 @@ well.
 For details, [see the tree shaking
 API](https://github.com/dphilipson/transducist/blob/master/docs/api.md#tree-shakeable-api)
 section of the API docs.
-
-## ES Modules and Node
-
-Transducist is distributed with ES module syntax (i.e. `import`/`export`,
-instead of `require()`/`module.exports`) because doing so is required to take
-advantage of tree shaking. If you're running in a Node environment or your
-bundler is so old that it doesn't understand this syntax, you may encounter
-runtime errors complaining about unexpected tokens in `import` statements. To
-resolve this, use the CommonJS version of this library instead by importing from
-`transducist/cjs`:
-
-```ts
-const { chainFrom } = require("transducist/cjs");
-```
 
 ## Benchmarks
 

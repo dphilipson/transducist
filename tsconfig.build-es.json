@@ -1,8 +1,0 @@
-{
-    "compilerOptions": {
-        "module": "es2015",
-        "outDir": "dist"
-    },
-    "exclude": ["__tests__/**/*"],
-    "extends": "./tsconfig.build-cjs.json"
-}
