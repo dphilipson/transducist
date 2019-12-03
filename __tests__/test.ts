@@ -3,10 +3,6 @@ import {
     count,
     first,
     rangeIterator,
-    toAverage,
-    toMax,
-    toMin,
-    toSum,
     transducerBuilder,
     Transformer,
 } from "../src/index";
@@ -649,70 +645,66 @@ describe("toIterator()", () => {
     });
 });
 
-describe("toAverage()", () => {
+describe("average()", () => {
     it("should average the elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).reduce(toAverage());
+        const result = chainFrom([1, 2, 3, 4, 5]).average();
         expect(result).toEqual(3);
     });
 
     it("should return null on empty input", () => {
-        const result = chainFrom([]).reduce(toAverage());
+        const input: number[] = [];
+        const result = chainFrom(input).average();
         expect(result).toBeNull();
     });
 });
 
-describe("toMax()", () => {
+describe("max()", () => {
     it("should take the max of numbers", () => {
-        const result = chainFrom([3, 4, 5, 1, 2]).reduce(toMax());
+        const result = chainFrom([3, 4, 5, 1, 2]).max();
         expect(result).toEqual(5);
     });
 
     it("should return null on empty input", () => {
-        const result = chainFrom([]).reduce(toMax());
+        const input: number[] = [];
+        const result = chainFrom(input).max();
         expect(result).toBeNull();
     });
 
     it("should use the comparator if provided", () => {
-        const result = chainFrom([["a", 2], ["b", 1], ["c", 3]]).reduce(
-            toMax(
-                (a: [string, number], b: [string, number]) =>
-                    a[1] < b[1] ? -1 : 1,
-            ),
-        );
+        const input: Array<[string, number]> = [["a", 2], ["b", 1], ["c", 3]];
+        const result = chainFrom(input).max((a, b) => (a[1] < b[1] ? -1 : 1));
         expect(result).toEqual(["c", 3]);
     });
 });
 
-describe("toMin()", () => {
+describe("min()", () => {
     it("should take the min of numbers", () => {
-        const result = chainFrom([3, 4, 5, 1, 2]).reduce(toMin());
+        const result = chainFrom([3, 4, 5, 1, 2]).min();
         expect(result).toEqual(1);
     });
 
     it("should return null on empty input", () => {
-        const result = chainFrom([]).reduce(toMin());
+        const input: number[] = [];
+        const result = chainFrom(input).min();
         expect(result).toBeNull();
     });
 
     it("should use the comparator if provided", () => {
-        const result = chainFrom([["a", 2], ["b", 1], ["c", 3]]).reduce(
-            toMin(
-                (a: [string, number], b: [string, number]) =>
-                    a[1] < b[1] ? -1 : 1,
-            ),
-        );
+        const input: Array<[string, number]> = [["a", 2], ["b", 1], ["c", 3]];
+        const result = chainFrom(input).min((a, b) => (a[1] < b[1] ? -1 : 1));
         expect(result).toEqual(["b", 1]);
     });
 });
 
-describe("toSum()", () => {
+describe("sum()", () => {
     it("should sum the elements", () => {
-        const result = chainFrom([1, 2, 3, 4, 5]).reduce(toSum());
+        const result = chainFrom([1, 2, 3, 4, 5]).sum();
         expect(result).toEqual(15);
     });
 
     it("should return 0 on empty input", () => {
-        const result = chainFrom([]).reduce(toSum());
+        const input: number[] = [];
+        const result = chainFrom(input).sum();
         expect(result).toEqual(0);
     });
 });

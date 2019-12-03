@@ -10,11 +10,15 @@ import {
     joinToString,
     some,
     toArray,
+    toAverage,
     toMap,
     toMapGroupBy,
+    toMax,
+    toMin,
     toObject,
     toObjectGroupBy,
     toSet,
+    toSum,
 } from "./reducers";
 import {
     dedupe,
@@ -33,6 +37,7 @@ import {
     takeWhile,
 } from "./transducers";
 import {
+    Comparator,
     CompletingTransformer,
     Dictionary,
     QuittingReducer,
@@ -66,6 +71,8 @@ export interface TransformChain<T> {
         transformer: CompletingTransformer<TResult, TCompleteResult, T>,
     ): TCompleteResult;
 
+    // tslint:disable: member-ordering
+    average: T extends number ? () => number | null : void;
     count(): number;
     every(pred: (item: T) => boolean): boolean;
     find(pred: (item: T) => boolean): T | null;
@@ -73,7 +80,14 @@ export interface TransformChain<T> {
     forEach(f: (item: T) => void): void;
     isEmpty(): boolean;
     joinToString(separator: string): string;
+    max: T extends number
+        ? (comparator?: Comparator<number>) => number | null
+        : (comparator: Comparator<T>) => number | null;
+    min: T extends number
+        ? (comparator?: Comparator<number>) => number | null
+        : (comparator: Comparator<T>) => number | null;
     some(pred: (item: T) => boolean): boolean;
+    sum: T extends number ? () => number : void;
     toArray(): T[];
     toMap<K, V>(getKey: (item: T) => K, getValue: (item: T) => V): Map<K, V>;
     toMapGroupBy<K>(getKey: (item: T) => K): Map<K, T[]>;
@@ -91,6 +105,7 @@ export interface TransformChain<T> {
         transformer: CompletingTransformer<any, U, T>,
     ): Dictionary<U>;
     toSet(): Set<T>;
+    // tslint:enable: member-ordering
 
     toIterator(): IterableIterator<T>;
 }
@@ -120,7 +135,7 @@ export interface TransducerBuilder<TBase, T> {
 }
 
 export function chainFrom<T>(collection: Iterable<T>): TransformChain<T> {
-    return new TransducerChain(collection);
+    return new TransducerChain(collection) as any;
 }
 
 export function transducerBuilder<T>(): TransducerBuilder<T, T> {
@@ -246,6 +261,11 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         }
     }
 
+    // @ts-ignore
+    public average(): number | null {
+        return this.reduce(toAverage() as any);
+    }
+
     public count(): number {
         return this.reduce(count());
     }
@@ -274,8 +294,28 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(joinToString(separator));
     }
 
+    // @ts-ignore
+    public max(comparator: Comparator<T>): T | null {
+        return this.reduce(toMax(comparator));
+    }
+
+    // @ts-ignore
+    public max(comparator: Comparator<T>): T | null {
+        return this.reduce(toMax(comparator));
+    }
+
+    // @ts-ignore
+    public min(comparator: Comparator<T>): T | null {
+        return this.reduce(toMin(comparator));
+    }
+
     public some(pred: (item: T) => boolean): boolean {
         return this.reduce(some(pred));
+    }
+
+    // @ts-ignore
+    public sum(): number {
+        return this.reduce(toSum() as any);
     }
 
     public toArray(): T[] {

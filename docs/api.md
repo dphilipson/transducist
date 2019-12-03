@@ -44,8 +44,8 @@
 -   [Reducers](#reducers)
     -   [`toSum()`](#tosum)
     -   [`toAverage()`](#toaverage)
-    -   [`toMin(comparator?)`](#tomincomparator)
-    -   [`toMax(comparator?)`](#tomaxcomparator)
+    -   [`min(comparator?)`](#mincomparator)
+    -   [`max(comparator?)`](#maxcomparator)
 -   [Utility functions](#utility-functions)
     -   [`isReduced(result)`](#isreducedresult)
     -   [`rangeIterator(start?, end, step?)`](#rangeiteratorstart-end-step)
@@ -596,7 +596,7 @@ chainFrom(["a", "bb", "ccc"])
     .reduce(toAverage()); // -> 2
 ```
 
-### `toMin(comparator?)`
+### `min(comparator?)`
 
 Returns the minimum element, according to the comparator. If no comparator is
 provided, then this reducer may only be applied if the elements are numbers and
@@ -607,10 +607,10 @@ Example:
 ```ts
 chainFrom(["a", "bb", "ccc"])
     .map(s => s.length)
-    .reduce(toMin()); // -> 1
+    .reduce(min()); // -> 1
 ```
 
-### `toMax(comparator?)`
+### `max(comparator?)`
 
 Returns the maximum element, according to the comparator. If no comparator is
 provided, then this reducer may only be applied if the elements are numbers and
@@ -621,7 +621,7 @@ Example:
 ```ts
 chainFrom(["a", "bb", "ccc"])
     .map(s => s.length)
-    .reduce(toMax()); // -> 3
+    .reduce(max()); // -> 3
 ```
 
 ## Utility functions
