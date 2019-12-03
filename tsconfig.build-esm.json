@@ -1,12 +1,8 @@
 {
     "compilerOptions": {
         "declaration": true,
-        "inlineSources": true,
         "module": "es2015",
-        "noEmit": false,
-        "outDir": "dist/esm",
-        "sourceMap": true
+        "outDir": "dist/esm"
     },
-    "exclude": ["__tests__/**/*"],
-    "extends": "./tsconfig.json"
+    "extends": "./tsconfig.build-cjs.json"
 }

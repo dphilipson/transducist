@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "forceConsistentCasingInFileNames": true,
         "lib": ["es5", "es2015.iterable", "es2015.collection"],
         "module": "commonjs",
         "moduleResolution": "node",
