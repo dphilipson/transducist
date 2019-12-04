@@ -34,7 +34,3 @@ export type Transformer<TResult, TInput> = CompletingTransformer<
 >;
 
 export type Comparator<T> = (a: T, b: T) => number;
-
-export interface Dictionary<T> {
-    [key: string]: T;
-}

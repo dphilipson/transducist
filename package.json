@@ -32,7 +32,7 @@
         "build": "yarn run clean && tsc -p tsconfig.build-esm.json && tsc -p tsconfig.build-cjs.json && ./scripts/mark-classes-pure.sh",
         "clean": "rm -rf dist/*",
         "format-file": "prettier --write",
-        "format": "git ls-files | egrep '\\.(js(on)?|md|scss|tsx?)?$' | xargs yarn run format-file",
+        "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
         "generate-toc": "git ls-files | egrep '\\.md$' | xargs scripts/markdown-toc-all.sh",
         "jest": "jest",
         "lint-file": "tslint",

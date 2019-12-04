@@ -39,7 +39,6 @@ import {
 import {
     Comparator,
     CompletingTransformer,
-    Dictionary,
     QuittingReducer,
     Transducer,
 } from "./types";
@@ -95,15 +94,17 @@ export interface TransformChain<T> {
         getKey: (item: T) => K,
         transformer: CompletingTransformer<any, V, T>,
     ): Map<K, V>;
-    toObject<U>(
-        getKey: (item: T) => string,
-        getValue: (item: T) => U,
-    ): Dictionary<U>;
-    toObjectGroupBy(getKey: (item: T) => string): Dictionary<T[]>;
-    toObjectGroupBy<U>(
-        getKey: (item: T) => string,
-        transformer: CompletingTransformer<any, U, T>,
-    ): Dictionary<U>;
+    toObject<K extends keyof any, V>(
+        getKey: (item: T) => K,
+        getValue: (item: T) => V,
+    ): Record<K, V>;
+    toObjectGroupBy<K extends keyof any>(
+        getKey: (item: T) => K,
+    ): Record<K, T[]>;
+    toObjectGroupBy<K extends keyof any, V>(
+        getKey: (item: T) => K,
+        transformer: CompletingTransformer<any, V, T>,
+    ): Record<K, V>;
     toSet(): Set<T>;
     // tslint:enable: member-ordering
 
@@ -341,22 +342,24 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.reduce(toMapGroupBy(getKey, transformer as any));
     }
 
-    public toObject<U>(
-        getKey: (item: T) => string,
-        getValue: (item: T) => U,
-    ): Dictionary<U> {
+    public toObject<K extends keyof any, V>(
+        getKey: (item: T) => K,
+        getValue: (item: T) => V,
+    ): Record<K, V> {
         return this.reduce(toObject(getKey, getValue));
     }
 
-    public toObjectGroupBy(getKey: (item: T) => string): Dictionary<T[]>;
-    public toObjectGroupBy<U>(
-        getKey: (item: T) => string,
-        transformer: CompletingTransformer<any, U, T>,
-    ): Dictionary<U>;
-    public toObjectGroupBy(
-        getKey: (item: T) => string,
+    public toObjectGroupBy<K extends keyof any>(
+        getKey: (item: T) => K,
+    ): Record<K, T[]>;
+    public toObjectGroupBy<K extends keyof any, V>(
+        getKey: (item: T) => K,
+        transformer: CompletingTransformer<any, V, T>,
+    ): Record<K, V>;
+    public toObjectGroupBy<K extends keyof any>(
+        getKey: (item: T) => K,
         transformer?: CompletingTransformer<any, any, T>,
-    ): Dictionary<any> {
+    ): Record<K, any> {
         return this.reduce(toObjectGroupBy(getKey, transformer as any));
     }
 

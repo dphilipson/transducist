@@ -1,11 +1,6 @@
 import { INIT, RESULT, STEP, VALUE } from "./propertyNames";
 import { filter, remove } from "./transducers";
-import {
-    Comparator,
-    CompletingTransformer,
-    Dictionary,
-    Transformer,
-} from "./types";
+import { Comparator, CompletingTransformer, Transformer } from "./types";
 import { isReduced, reduced } from "./util";
 
 // Transformers with no parameters, such as the one for count() here, are
@@ -245,63 +240,67 @@ export function toMapGroupBy<T, K>(
     return new ToMapGroupBy(getKey, transformer);
 }
 
-class ToObject<T, U> implements Transformer<Dictionary<U>, T> {
+class ToObject<T, K extends keyof any, V>
+    implements Transformer<Record<K, V>, T> {
     constructor(
-        private readonly getKey: (item: T) => string,
-        private readonly getValue: (item: T) => U,
+        private readonly getKey: (item: T) => K,
+        private readonly getValue: (item: T) => V,
     ) {}
 
-    public [INIT](): Dictionary<U> {
-        return {};
+    public [INIT](): Record<K, V> {
+        return {} as any;
     }
 
-    public [RESULT](result: Dictionary<U>): Dictionary<U> {
+    public [RESULT](result: Record<K, V>): Record<K, V> {
         return result;
     }
 
-    public [STEP](result: Dictionary<U>, item: T): Dictionary<U> {
+    public [STEP](result: Record<K, V>, item: T): Record<K, V> {
         result[this.getKey(item)] = this.getValue(item);
         return result;
     }
 }
 
-export function toObject<T, U>(
-    getKey: (item: T) => string,
-    getValue: (item: T) => U,
-): Transformer<Dictionary<U>, T> {
+export function toObject<T, K extends keyof any, V>(
+    getKey: (item: T) => K,
+    getValue: (item: T) => V,
+): Transformer<Record<K, V>, T> {
     return new ToObject(getKey, getValue);
 }
 
-class ToObjectGroupBy<T, U>
+class ToObjectGroupBy<T, K extends keyof any, V>
     implements
         CompletingTransformer<
-            Dictionary<InProgressTransformer<any, U, T>>,
-            Dictionary<U>,
+            Record<K, InProgressTransformer<any, V, T>>,
+            Record<K, V>,
             T
         > {
     constructor(
-        private readonly getKey: (item: T) => string,
-        private readonly xf: CompletingTransformer<any, U, T>,
+        private readonly getKey: (item: T) => K,
+        private readonly xf: CompletingTransformer<any, V, T>,
     ) {}
 
-    public [INIT](): Dictionary<InProgressTransformer<any, U, T>> {
-        return {};
+    public [INIT](): Record<K, InProgressTransformer<any, V, T>> {
+        return {} as any;
     }
 
     public [RESULT](
-        result: Dictionary<InProgressTransformer<any, U, T>>,
-    ): Dictionary<U> {
-        const completeResult: Dictionary<U> = {};
+        result: Record<K, InProgressTransformer<any, V, T>>,
+    ): Record<K, V> {
+        const completeResult: Record<K, V> = {} as any;
         Object.keys(result).forEach(
-            key => (completeResult[key] = result[key].getResult()),
+            key =>
+                ((completeResult as any)[key] = (result as any)[
+                    key
+                ].getResult()),
         );
         return completeResult;
     }
 
     public [STEP](
-        result: Dictionary<InProgressTransformer<any, U, T>>,
+        result: Record<K, InProgressTransformer<any, V, T>>,
         item: T,
-    ): Dictionary<InProgressTransformer<any, U, T>> {
+    ): Record<K, InProgressTransformer<any, V, T>> {
         const key = this.getKey(item);
         if (!result[key]) {
             result[key] = new InProgressTransformer(this.xf);
@@ -311,17 +310,17 @@ class ToObjectGroupBy<T, U>
     }
 }
 
-export function toObjectGroupBy<T>(
-    getKey: (item: T) => string,
-): Transformer<Dictionary<T[]>, T>;
-export function toObjectGroupBy<T, U>(
-    getKey: (item: T) => string,
-    transformer: CompletingTransformer<any, U, T>,
-): Transformer<Dictionary<U>, T>;
-export function toObjectGroupBy<T>(
-    getKey: (item: T) => string,
+export function toObjectGroupBy<T, K extends keyof any, V>(
+    getKey: (item: T) => K,
+): Transformer<Record<K, V[]>, V>;
+export function toObjectGroupBy<T, K extends keyof any, V>(
+    getKey: (item: T) => K,
+    transformer: CompletingTransformer<any, V, T>,
+): Transformer<Record<K, V>, T>;
+export function toObjectGroupBy<T, K extends keyof any>(
+    getKey: (item: T) => K,
     transformer: CompletingTransformer<any, any, T> = toArray(),
-): Transformer<Dictionary<any>, T> {
+): Transformer<Record<K, any>, T> {
     return new ToObjectGroupBy(getKey, transformer);
 }
 
