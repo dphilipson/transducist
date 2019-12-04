@@ -8,17 +8,17 @@ import {
     forEach,
     isEmpty,
     joinToString,
+    max,
+    min,
     some,
+    sum,
     toArray,
     toAverage,
     toMap,
     toMapGroupBy,
-    toMax,
-    toMin,
     toObject,
     toObjectGroupBy,
     toSet,
-    toSum,
 } from "./reducers";
 import {
     dedupe,
@@ -297,17 +297,17 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
     // @ts-ignore
     public max(comparator: Comparator<T>): T | null {
-        return this.reduce(toMax(comparator));
+        return this.reduce(max(comparator));
     }
 
     // @ts-ignore
     public max(comparator: Comparator<T>): T | null {
-        return this.reduce(toMax(comparator));
+        return this.reduce(max(comparator));
     }
 
     // @ts-ignore
     public min(comparator: Comparator<T>): T | null {
-        return this.reduce(toMin(comparator));
+        return this.reduce(min(comparator));
     }
 
     public some(pred: (item: T) => boolean): boolean {
@@ -316,7 +316,7 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
     // @ts-ignore
     public sum(): number {
-        return this.reduce(toSum() as any);
+        return this.reduce(sum() as any);
     }
 
     public toArray(): T[] {

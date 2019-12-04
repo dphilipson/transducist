@@ -42,7 +42,7 @@
     -   [`.toIterator()`](#toiterator)
     -   [`.reduce(reducer, intialValue?)`](#reducereducer-intialvalue)
 -   [Reducers](#reducers)
-    -   [`toSum()`](#tosum)
+    -   [`sum()`](#sum)
     -   [`toAverage()`](#toaverage)
     -   [`min(comparator?)`](#mincomparator)
     -   [`max(comparator?)`](#maxcomparator)
@@ -569,7 +569,7 @@ A handful of pre-made transformers are provided by this library to be used with
 
 These APIs provide objects which may be passed to `reduce()`, as described in
 the previous section, to provide additional options for completing chains whose
-elements are of specific types- for example, `toSum()` can only be used on a
+elements are of specific types- for example, `sum()` can only be used on a
 chain of numbers.
 
 They are kept as separate transformer objects, rather than added as additional
@@ -580,7 +580,7 @@ methods would mean they could be called regardless of the current element type.
 By contrast, passing one of these reducers to `reduce()` on a chain of the
 incorrect type will be caught as an error by TypeScript.
 
-### `toSum()`
+### `sum()`
 
 For a chain of numbers, return their sum. If the input is empty, return `0`. For
 example:
@@ -588,7 +588,7 @@ example:
 ```ts
 chainFrom(["a", "bb", "ccc"])
     .map(s => s.length)
-    .reduce(toSum()); // -> 6
+    .reduce(sum()); // -> 6
 ```
 
 ### `toAverage()`

@@ -394,17 +394,17 @@ const NATURAL_COMPARATOR: Comparator<number> = (a: number, b: number) => {
     }
 };
 
-export function toMax(): Transformer<number | null, number>;
-export function toMax<T>(comparator: Comparator<T>): Transformer<T | null, T>;
-export function toMax(
+export function max(): Transformer<number | null, number>;
+export function max<T>(comparator: Comparator<T>): Transformer<T | null, T>;
+export function max(
     comparator: Comparator<any> = NATURAL_COMPARATOR,
 ): Transformer<any, any> {
     return new Min(invertComparator(comparator));
 }
 
-export function toMin(): Transformer<number | null, number>;
-export function toMin<T>(comparator: Comparator<T>): Transformer<T | null, T>;
-export function toMin(
+export function min(): Transformer<number | null, number>;
+export function min<T>(comparator: Comparator<T>): Transformer<T | null, T>;
+export function min(
     comparator: Comparator<any> = NATURAL_COMPARATOR,
 ): Transformer<any, any> {
     return new Min(comparator);
@@ -412,7 +412,7 @@ export function toMin(
 
 let sumTransformer: Transformer<number, number> | undefined;
 
-export function toSum(): Transformer<number, number> {
+export function sum(): Transformer<number, number> {
     if (!sumTransformer) {
         sumTransformer = {
             [INIT]: () => 0,
