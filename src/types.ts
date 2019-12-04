@@ -33,9 +33,6 @@ export type Transformer<TResult, TInput> = CompletingTransformer<
     TInput
 >;
 
-// Courtesy of https://github.com/pelotom/type-zoo.
-export type NonNullable<T> = T & {};
-
 export type Comparator<T> = (a: T, b: T) => number;
 
 export interface Dictionary<T> {
