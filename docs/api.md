@@ -25,6 +25,7 @@
     -   [`.takeWhile(pred)`](#takewhilepred)
     -   [`.compose(transducer)`](#composetransducer)
 -   [Ending a chain](#ending-a-chain)
+    -   [`.average()`](#average)
     -   [`.count()`](#count)
     -   [`.every(pred)`](#everypred)
     -   [`.find(pred)`](#findpred)
@@ -32,7 +33,10 @@
     -   [`.forEach(f)`](#foreachf)
     -   [`.isEmpty()`](#isempty)
     -   [`.joinToString(separator)`](#jointostringseparator)
+    -   [`.max(comparator?)`](#maxcomparator)
+    -   [`.min(comparator?)`](#mincomparator)
     -   [`.some(pred)`](#somepred)
+    -   [`.sum()`](#sum)
     -   [`.toArray()`](#toarray)
     -   [`.toMap(getKey, getValue)`](#tomapgetkey-getvalue)
     -   [`.toMapGroupBy(getKey, transformer?)`](#tomapgroupbygetkey-transformer)
@@ -46,9 +50,13 @@
     -   [`toAverage()`](#toaverage)
     -   [`min(comparator?)`](#mincomparator)
     -   [`max(comparator?)`](#maxcomparator)
+-   [Iterables](#iterables)
+    -   [`cycle(iterable)`](#cycleiterable)
+    -   [`iterate(initialValue, f)`](#iterateinitialvalue-f)
+    -   [`repeat(value, count?)`](#repeatvalue-count)
+    -   [`range(start?, end, ste?)`](#rangestart-end-ste)
 -   [Utility functions](#utility-functions)
     -   [`isReduced(result)`](#isreducedresult)
-    -   [`range(start?, end, step?)`](#rangestart-end-step)
     -   [`reduced(result)`](#reducedresult)
 -   [Tree shakeable API](#tree-shakeable-api)
     -   [`compose(f1, f2, ...)`](#composef1-f2-)
@@ -273,6 +281,17 @@ library internally to implement all the others. For example usage, see the
 The following methods terminate a chain started with `chainFrom`, performing the
 calculations and producing a result.
 
+### `.average()`
+
+For a chain of numbers, return their average, or `null` if there are no
+elements. For example:
+
+```ts
+chainFrom(["a", "bb", "ccc"])
+    .map(s => s.length)
+    .average(); // -> 2
+```
+
 ### `.count()`
 
 Returns the number of elements. For example:
@@ -369,6 +388,34 @@ chainFrom([1, 2, 3, 4, 5])
 Not called `toString()` in order to avoid clashing with the `Object` prototype
 method.
 
+### `.max(comparator?)`
+
+Returns the maximum element, according to the comparator. If the elements are
+numbers, then this may be called without providing a comparator, in which case
+the natural comparator is used. Returns `null` if there are no elements.
+
+Example:
+
+```ts
+chainFrom(["a", "bb", "ccc"])
+    .map(s => s.length)
+    .max(); // -> 3
+```
+
+### `.min(comparator?)`
+
+Returns the minimum element, according to the comparator. If the elements are
+numbers, then this may be called without providing a comparator, in which case
+the natural comparator is used. Returns `null` if there are no elements.
+
+Example:
+
+```ts
+chainFrom(["a", "bb", "ccc"])
+    .map(s => s.length)
+    .min()); // -> 1
+```
+
 ### `.some(pred)`
 
 Returns `true` if any element satisfies the predicate `pred`, or `false`
@@ -385,6 +432,17 @@ chainFrom([1, 2, 3, 4, 5])
 chainFrom([1, 2, 3, 4, 5])
     .map(n => 10 * n)
     .some(n => n === 1); // -> false
+```
+
+### `.sum()`
+
+For a chain of numbers, return their sum. If the input is empty, return `0`. For
+example:
+
+```ts
+chainFrom(["a", "bb", "ccc"])
+    .map(s => s.length)
+    .sum(); // -> 6
 ```
 
 ### `.toArray()`
@@ -630,16 +688,51 @@ chainFrom(["a", "bb", "ccc"])
     .reduce(max()); // -> 3
 ```
 
-## Utility functions
+## Iterables
 
-### `isReduced(result)`
+Helper functions for producing iterables, often useful for starting chains.
 
-Returns true if `result` is a reduced value as described by the [transducer
-protocol](https://github.com/cognitect-labs/transducers-js#reduced).
+### `cycle(iterable)`
 
-### `range(start?, end, step?)`
+Returns an iterable which repeats the elements of the input iterable
+indefinitely. If the input iterable is empty, then produces an empty iterable. For example:
 
-Returns an iterator which outputs values from `start` inclusive to `end`
+```ts
+chainFrom(cycle(["a", "b", "c"]))
+    .take(7)
+    .toArray(); // -> ["a", "b", "c", "a", "b", "c", "a"]
+
+chainFrom(cycle([])).toArray(); // -> []
+```
+
+### `iterate(initialValue, f)`
+
+Returns an iterable which emits `initialValue`, `f(initialValue)`,
+`f(f(initialValue))`, and so on. For example:
+
+```ts
+chainFrom(iterate(1, x => 2 * x))
+    .take(5)
+    .toArray(); // -> [1, 2, 4, 8, 16]
+```
+
+### `repeat(value, count?)`
+
+Returns an iterable which emits `value` repeatedly. If `count` is provided, then
+emits `value` that many times. If `count` is omitted, then emits `value`
+indefinitely. Throws if `count` is negative. For example:
+
+```ts
+chainFrom(repeat("x"))
+    .take(3)
+    .toArray(); // -> ["x", "x", "x"]
+
+chainFrom(repeat("x", 3)).toArray(); // -> ["x", "x", "x"]
+```
+
+### `range(start?, end, ste?)`
+
+Returns an iterable which outputs values from `start` inclusive to `end`
 exclusive, incrementing by `step` each time. `start` and `step` may be omitted,
 and default to `0` and `1` respectively.
 
@@ -658,7 +751,7 @@ Example:
 ```ts
 chainFrom(range(3))
     .map(i => "String #" + i)
-    .toArray(); // -> ["String #0", "String #1", "String#2"]
+    .toArray(); // -> ["String #0", "String #1", "String #2"]
 
 chainFrom(range(10, 15)).toArray(); // -> [10, 11, 12, 13, 14]
 
@@ -667,7 +760,7 @@ chainFrom(range(10, 15, 2)).toArray(); // -> [10, 12, 14]
 chainFrom(range(15, 10, -2)).toArray(); // -> [15, 13, 11]
 ```
 
-The iterator is lazy, so for example the following will return quickly and not
+Values are produced lazily, so for example the following will return quickly and not
 use up all your memory:
 
 ```ts
@@ -675,6 +768,13 @@ chainFrom(range(1000000000000))
     .take(3)
     .toArray(); // -> [0, 1, 2]
 ```
+
+## Utility functions
+
+### `isReduced(result)`
+
+Returns true if `result` is a reduced value as described by the [transducer
+protocol](https://github.com/cognitect-labs/transducers-js#reduced).
 
 ### `reduced(result)`
 
