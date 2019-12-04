@@ -45,11 +45,6 @@
     -   [`.toSet()`](#toset)
     -   [`.toIterator()`](#toiterator)
     -   [`.reduce(reducer, intialValue?)`](#reducereducer-intialvalue)
--   [Reducers](#reducers)
-    -   [`sum()`](#sum)
-    -   [`toAverage()`](#toaverage)
-    -   [`min(comparator?)`](#mincomparator)
-    -   [`max(comparator?)`](#maxcomparator)
 -   [Iterables](#iterables)
     -   [`cycle(iterable)`](#cycleiterable)
     -   [`iterate(initialValue, f)`](#iterateinitialvalue-f)
@@ -230,7 +225,7 @@ chainFrom([0, 1, null, 2, undefined, 3])
 
 ### `.take(n)`
 
-Takes the first `n` elements and drops the rest. An essential opperation for
+Takes the first `n` elements and drops the rest. An essential operation for
 efficiency, because it stops computations from occurring on more elements of the
 input than needed to produce `n` results. If there are less than `n` elements,
 then leave all of them unchanged. If `n` is negative, then take none of them
@@ -274,7 +269,9 @@ protocol](https://github.com/cognitect-labs/transducers-js#the-transducer-protoc
 meaning it is a function which takes a `Transformer` and returns another
 `Transformer`. This is the most general transformation, and it is used by this
 library internally to implement all the others. For example usage, see the
-[Advanced Usage](#advanced-usage) section of the main readme.
+[Using custom
+transducers](https://github.com/dphilipson/transducist#using-custom-transducers)
+section of the main readme.
 
 ## Ending a chain
 
@@ -622,71 +619,6 @@ chainFrom([1, 2, 3, 4, 5])
 
 A handful of pre-made transformers are provided by this library to be used with
 `reduce()`. They are described in the next section.
-
-## Reducers
-
-These APIs provide objects which may be passed to `reduce()`, as described in
-the previous section, to provide additional options for completing chains whose
-elements are of specific types- for example, `sum()` can only be used on a
-chain of numbers.
-
-They are kept as separate transformer objects, rather than added as additional
-termination methods, to maintain type safety in TypeScript projects. TypeScript
-does not provide a way to restrict which of an interface's methods may be called
-depending on the value of a type parameter, so adding these as termination
-methods would mean they could be called regardless of the current element type.
-By contrast, passing one of these reducers to `reduce()` on a chain of the
-incorrect type will be caught as an error by TypeScript.
-
-### `sum()`
-
-For a chain of numbers, return their sum. If the input is empty, return `0`. For
-example:
-
-```ts
-chainFrom(["a", "bb", "ccc"])
-    .map(s => s.length)
-    .reduce(sum()); // -> 6
-```
-
-### `toAverage()`
-
-For a chain of numbers, return their average, or `null` if there are no
-elements. For example:
-
-```ts
-chainFrom(["a", "bb", "ccc"])
-    .map(s => s.length)
-    .reduce(toAverage()); // -> 2
-```
-
-### `min(comparator?)`
-
-Returns the minimum element, according to the comparator. If no comparator is
-provided, then this reducer may only be applied if the elements are numbers and
-uses the natural comparator. Returns `null` if there are no elements.
-
-Example:
-
-```ts
-chainFrom(["a", "bb", "ccc"])
-    .map(s => s.length)
-    .reduce(min()); // -> 1
-```
-
-### `max(comparator?)`
-
-Returns the maximum element, according to the comparator. If no comparator is
-provided, then this reducer may only be applied if the elements are numbers and
-uses the natural comparator. Returns `null` if there are no elements.
-
-Example:
-
-```ts
-chainFrom(["a", "bb", "ccc"])
-    .map(s => s.length)
-    .reduce(max()); // -> 3
-```
 
 ## Iterables
 
