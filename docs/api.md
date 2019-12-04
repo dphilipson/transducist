@@ -48,7 +48,7 @@
     -   [`max(comparator?)`](#maxcomparator)
 -   [Utility functions](#utility-functions)
     -   [`isReduced(result)`](#isreducedresult)
-    -   [`rangeIterator(start?, end, step?)`](#rangeiteratorstart-end-step)
+    -   [`range(start?, end, step?)`](#rangestart-end-step)
     -   [`reduced(result)`](#reducedresult)
 -   [Tree shakeable API](#tree-shakeable-api)
     -   [`compose(f1, f2, ...)`](#composef1-f2-)
@@ -412,7 +412,10 @@ const authors = [
     { name: "mshelley", books: ["Frankenstein"] },
 ];
 
-chainFrom(authors).toMap(a => a.id, a => a.books.length);
+chainFrom(authors).toMap(
+    a => a.id,
+    a => a.books.length,
+);
 // -> Map{ "cbrontë" -> 2, "mshelley" -> 4 }
 ```
 
@@ -474,7 +477,10 @@ const authors = [
     { name: "mshelley", books: ["Frankenstein"] },
 ];
 
-chainFrom(authors).toObject(a => a.id, a => a.books.length);
+chainFrom(authors).toObject(
+    a => a.id,
+    a => a.books.length,
+);
 // -> { cbrontë: 2, mshelley: 1 }
 ```
 
@@ -631,7 +637,7 @@ chainFrom(["a", "bb", "ccc"])
 Returns true if `result` is a reduced value as described by the [transducer
 protocol](https://github.com/cognitect-labs/transducers-js#reduced).
 
-### `rangeIterator(start?, end, step?)`
+### `range(start?, end, step?)`
 
 Returns an iterator which outputs values from `start` inclusive to `end`
 exclusive, incrementing by `step` each time. `start` and `step` may be omitted,
@@ -650,22 +656,22 @@ Throws an error if `step` is zero.
 Example:
 
 ```ts
-chainFrom(rangeIterator(3))
+chainFrom(range(3))
     .map(i => "String #" + i)
     .toArray(); // -> ["String #0", "String #1", "String#2"]
 
-chainFrom(rangeIterator(10, 15)).toArray(); // -> [10, 11, 12, 13, 14]
+chainFrom(range(10, 15)).toArray(); // -> [10, 11, 12, 13, 14]
 
-chainFrom(rangeIterator(10, 15, 2)).toArray(); // -> [10, 12, 14]
+chainFrom(range(10, 15, 2)).toArray(); // -> [10, 12, 14]
 
-chainFrom(rangeIterator(15, 10, -2)).toArray(); // -> [15, 13, 11]
+chainFrom(range(15, 10, -2)).toArray(); // -> [15, 13, 11]
 ```
 
 The iterator is lazy, so for example the following will return quickly and not
 use up all your memory:
 
 ```ts
-chainFrom(rangeIterator(1000000000000))
+chainFrom(range(1000000000000))
     .take(3)
     .toArray(); // -> [0, 1, 2]
 ```

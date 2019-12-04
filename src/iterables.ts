@@ -4,7 +4,7 @@ import { Transducer, Transformer } from "./types";
 import { isReduced } from "./util";
 
 const ITERATOR_SYMBOL =
-    typeof Symbol !== "undefined" ? Symbol.iterator : "@@iterator";
+    typeof Symbol !== "undefined" ? Symbol.iterator : ("@@iterator" as any);
 
 /**
  * For compatibility with environments where common types aren't iterable.
@@ -55,9 +55,7 @@ class RangeIterator implements Iterator<number> {
     private i: number;
 
     constructor(startOrEnd: number, end?: number, step?: number) {
-        if (step === 0) {
-            throw new Error("Step in rangeIterator() cannot be 0");
-        } else if (end == null) {
+        if (end == null) {
             this.i = 0;
             this.end = startOrEnd;
             this.step = 1;
@@ -88,14 +86,121 @@ class RangeIterator implements Iterator<number> {
     }
 }
 
-export function rangeIterator(
+export function range(
     startOrEnd: number,
     end?: number,
     step?: number,
-): IterableIterator<number> {
-    // We can't satisfy the IterableIterator interface while functioning in
-    // environments without Symbol, hence the cast.
-    return new RangeIterator(startOrEnd, end, step) as any;
+): Iterable<number> {
+    if (step === 0) {
+        throw new Error("Step in range() cannot be 0");
+    }
+    return {
+        [ITERATOR_SYMBOL]: () => new RangeIterator(startOrEnd, end, step),
+    } as any;
+}
+
+class RepeatIterator<T> implements Iterator<T> {
+    private i = 0;
+
+    constructor(
+        private readonly value: T,
+        private readonly count: number = Number.POSITIVE_INFINITY,
+    ) {}
+
+    public [ITERATOR_SYMBOL]() {
+        return this;
+    }
+
+    public next(): IteratorResult<T> {
+        if (this.count == null || this.i < this.count) {
+            this.i++;
+            return { done: false, value: this.value };
+        } else {
+            return { done: true } as any;
+        }
+    }
+}
+
+export function repeat<T>(value: T, count?: number): Iterable<T> {
+    if (count != null && count < 0) {
+        throw new Error("Repeat count cannot be negative");
+    }
+    return { [ITERATOR_SYMBOL]: () => new RepeatIterator(value, count) } as any;
+}
+
+class IterateIterator<T> implements Iterator<T> {
+    private hasEmittedInitialValue = false;
+    private lastValue: T;
+
+    constructor(
+        initialValue: T,
+        private readonly getNextValue: (value: T) => T,
+    ) {
+        this.lastValue = initialValue;
+    }
+
+    public [ITERATOR_SYMBOL]() {
+        return this;
+    }
+
+    public next(): IteratorResult<T> {
+        if (!this.hasEmittedInitialValue) {
+            this.hasEmittedInitialValue = true;
+            return { done: false, value: this.lastValue };
+        } else {
+            this.lastValue = this.getNextValue(this.lastValue);
+            return { done: false, value: this.lastValue };
+        }
+    }
+}
+
+export function iterate<T>(
+    initialValue: T,
+    getNextValue: (lastValue: T) => T,
+): Iterable<T> {
+    return {
+        [ITERATOR_SYMBOL]: () =>
+            new IterateIterator(initialValue, getNextValue),
+    } as any;
+}
+
+class CycleIterator<T> implements Iterator<T> {
+    private readonly valueIterator: Iterator<T>;
+    private readonly values: T[] = [];
+    private hasConsumedIterator = false;
+    private i = 0;
+
+    constructor(values: Iterable<T>) {
+        this.valueIterator = (values as any)[ITERATOR_SYMBOL]();
+    }
+
+    public [ITERATOR_SYMBOL]() {
+        return this;
+    }
+
+    public next(): IteratorResult<T> {
+        if (!this.hasConsumedIterator) {
+            const result = this.valueIterator.next();
+            const { done, value } = result;
+            if (!done) {
+                this.values.push(value);
+                return result;
+            } else {
+                this.hasConsumedIterator = true;
+                return this.next();
+            }
+        } else if (this.values.length === 0) {
+            return { done: true } as any;
+        } else {
+            const value = this.values[this.i];
+            this.i = (this.i + 1) % this.values.length;
+            return { done: false, value };
+        }
+    }
+}
+
+export function cycle<T>(values: Iterable<T>): Iterable<T> {
+    return { [ITERATOR_SYMBOL]: () => new CycleIterator(values) as any } as any;
 }
 
 /**

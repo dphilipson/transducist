@@ -5,7 +5,7 @@ export {
     TransformChain,
 } from "./chain";
 export { transduce } from "./core";
-export { lazyTransduce, rangeIterator } from "./iterables";
+export { lazyTransduce, range, repeat, iterate, cycle } from "./iterables";
 export * from "./reducers";
 export * from "./transducers";
 export * from "./types";

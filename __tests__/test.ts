@@ -1,8 +1,11 @@
 import {
     chainFrom,
     count,
+    cycle,
     first,
-    rangeIterator,
+    iterate,
+    range,
+    repeat,
     transducerBuilder,
     Transformer,
 } from "../src/index";
@@ -106,7 +109,7 @@ describe("flatMap()", () => {
 
     it("should work when mapping to iterators", () => {
         const result = chainFrom(["a", "bb", "ccc"])
-            .flatMap(s => rangeIterator(s.length))
+            .flatMap(s => range(s.length))
             .toArray();
         expect(result).toEqual([0, 0, 1, 0, 1, 2]);
     });
@@ -119,11 +122,9 @@ describe("flatMap()", () => {
     });
 
     it("should consume iterators only as much as necessary", () => {
-        const iterators = [
-            rangeIterator(3),
-            rangeIterator(3),
-            rangeIterator(3),
-        ];
+        const iterators = [range(3), range(3), range(3)].map(
+            getIterableIterator,
+        );
         const result = chainFrom([0, 1, 2])
             .flatMap(n => iterators[n])
             .take(5)
@@ -226,7 +227,7 @@ describe("take()", () => {
     });
 
     it("should terminate after pulling n elements", () => {
-        const iterator = rangeIterator(1, 5);
+        const iterator = getIterableIterator(range(1, 5));
         const result = chainFrom(iterator)
             .take(2)
             .toArray();
@@ -284,7 +285,7 @@ describe("takeWhile()", () => {
     });
 
     it("should terminate after the predicate fails", () => {
-        const iterator = rangeIterator(1, 5);
+        const iterator = getIterableIterator(range(1, 5));
         const result = chainFrom(iterator)
             .takeWhile(n => n < 3)
             .toArray();
@@ -347,7 +348,7 @@ describe("every()", () => {
     });
 
     it("should short-circuit if a failure is found", () => {
-        const iterator = rangeIterator(1, 5);
+        const iterator = getIterableIterator(range(1, 5));
         const result = chainFrom(iterator)
             .map(n => 10 * n)
             .every(n => n < 30);
@@ -372,7 +373,7 @@ describe("find()", () => {
     });
 
     it("should terminate computation upon finding a match", () => {
-        const iterator = rangeIterator(1, 5);
+        const iterator = getIterableIterator(range(1, 5));
         const result = chainFrom(iterator)
             .map(x => 10 * x)
             .find(x => x === 20);
@@ -400,7 +401,7 @@ describe("first()", () => {
     });
 
     it("should terminate computation", () => {
-        const iterator = rangeIterator(1, 5);
+        const iterator = getIterableIterator(range(1, 5));
         const result = chainFrom(iterator)
             .map(x => 10 * x)
             .first();
@@ -436,7 +437,7 @@ describe("isEmpty()", () => {
     });
 
     it("should terminate after one element", () => {
-        const iterator = rangeIterator(1, 5);
+        const iterator = getIterableIterator(range(1, 5));
         const result = chainFrom(iterator)
             .map(n => 10 * n)
             .isEmpty();
@@ -477,7 +478,7 @@ describe("some()", () => {
     });
 
     it("should short-circuit if a match is found", () => {
-        const iterator = rangeIterator(1, 5);
+        const iterator = getIterableIterator(range(1, 5));
         const result = chainFrom(iterator)
             .map(n => 10 * n)
             .some(n => n === 30);
@@ -503,15 +504,33 @@ describe("toArray()", () => {
 
 describe("toMap()", () => {
     it("should make a map using the provided functions", () => {
-        const input: Array<[boolean, number]> = [[false, 0], [true, 1]];
-        const result = chainFrom(input).toMap(x => x[0], x => x[1]);
+        const input: Array<[boolean, number]> = [
+            [false, 0],
+            [true, 1],
+        ];
+        const result = chainFrom(input).toMap(
+            x => x[0],
+            x => x[1],
+        );
         expect(result).toEqual(new Map(input));
     });
 
     it("should replace earlier values with later ones at the same key", () => {
-        const input: Array<[string, number]> = [["a", 1], ["b", 1], ["a", 2]];
-        const result = chainFrom(input).toMap(x => x[0], x => x[1]);
-        expect(result).toEqual(new Map([["a", 2], ["b", 1]]));
+        const input: Array<[string, number]> = [
+            ["a", 1],
+            ["b", 1],
+            ["a", 2],
+        ];
+        const result = chainFrom(input).toMap(
+            x => x[0],
+            x => x[1],
+        );
+        expect(result).toEqual(
+            new Map([
+                ["a", 2],
+                ["b", 1],
+            ]),
+        );
     });
 });
 
@@ -520,14 +539,22 @@ describe("toMapGroupBy()", () => {
         const input = ["a", "b", "aa", "aaa", "bc"];
         const result = chainFrom(input).toMapGroupBy(s => s[0]);
         expect(result).toEqual(
-            new Map([["a", ["a", "aa", "aaa"]], ["b", ["b", "bc"]]]),
+            new Map([
+                ["a", ["a", "aa", "aaa"]],
+                ["b", ["b", "bc"]],
+            ]),
         );
     });
 
     it("should use the provided transformer", () => {
         const input = ["a", "b", "aa", "aaa", "bc"];
         const result = chainFrom(input).toMapGroupBy(s => s[0], count());
-        expect(result).toEqual(new Map([["a", 3], ["b", 2]]));
+        expect(result).toEqual(
+            new Map([
+                ["a", 3],
+                ["b", 2],
+            ]),
+        );
     });
 
     it("should respect when provided transformer returns reduced", () => {
@@ -539,7 +566,12 @@ describe("toMapGroupBy()", () => {
                 s => s[0],
                 firstTransformer,
             );
-            expect(result).toEqual(new Map([["a", "a"], ["b", "b"]]));
+            expect(result).toEqual(
+                new Map([
+                    ["a", "a"],
+                    ["b", "b"],
+                ]),
+            );
             expect(stepSpy).toHaveBeenCalledTimes(2);
         } finally {
             stepSpy.mockRestore();
@@ -550,13 +582,23 @@ describe("toMapGroupBy()", () => {
 describe("toObject()", () => {
     it("should make an object using the provided functions", () => {
         const input = ["a", "bb", "ccc"];
-        const result = chainFrom(input).toObject(s => s, s => s.length);
+        const result = chainFrom(input).toObject(
+            s => s,
+            s => s.length,
+        );
         expect(result).toEqual({ a: 1, bb: 2, ccc: 3 });
     });
 
     it("should replace earlier values with later ones at the same key", () => {
-        const input: Array<[string, number]> = [["a", 1], ["b", 1], ["a", 2]];
-        const result = chainFrom(input).toObject(x => x[0], x => x[1]);
+        const input: Array<[string, number]> = [
+            ["a", 1],
+            ["b", 1],
+            ["a", 2],
+        ];
+        const result = chainFrom(input).toObject(
+            x => x[0],
+            x => x[1],
+        );
         expect(result).toEqual({ a: 2, b: 1 });
     });
 });
@@ -617,7 +659,7 @@ describe("toIterator()", () => {
     });
 
     it("should respect early termination", () => {
-        const iterator = rangeIterator(1, 5);
+        const iterator = getIterableIterator(range(1, 5));
         const truncatedIterator = chainFrom(iterator)
             .take(2)
             .toIterator();
@@ -671,7 +713,11 @@ describe("max()", () => {
     });
 
     it("should use the comparator if provided", () => {
-        const input: Array<[string, number]> = [["a", 2], ["b", 1], ["c", 3]];
+        const input: Array<[string, number]> = [
+            ["a", 2],
+            ["b", 1],
+            ["c", 3],
+        ];
         const result = chainFrom(input).max((a, b) => (a[1] < b[1] ? -1 : 1));
         expect(result).toEqual(["c", 3]);
     });
@@ -690,7 +736,11 @@ describe("min()", () => {
     });
 
     it("should use the comparator if provided", () => {
-        const input: Array<[string, number]> = [["a", 2], ["b", 1], ["c", 3]];
+        const input: Array<[string, number]> = [
+            ["a", 2],
+            ["b", 1],
+            ["c", 3],
+        ];
         const result = chainFrom(input).min((a, b) => (a[1] < b[1] ? -1 : 1));
         expect(result).toEqual(["b", 1]);
     });
@@ -730,36 +780,86 @@ describe("transducer builder", () => {
     });
 });
 
-// ----- Utilities -----
+// ----- Iterables -----
 
-describe("rangeIterator()", () => {
+describe("range()", () => {
     it("should iterate from 0 to end with single argument", () => {
-        expect(Array.from(rangeIterator(5))).toEqual([0, 1, 2, 3, 4]);
+        expect(Array.from(range(5))).toEqual([0, 1, 2, 3, 4]);
     });
 
     it("should iterate from start to end with two arguments", () => {
-        expect(Array.from(rangeIterator(2, 5))).toEqual([2, 3, 4]);
+        expect(Array.from(range(2, 5))).toEqual([2, 3, 4]);
     });
 
     it("should iterate in steps with three arguments", () => {
-        expect(Array.from(rangeIterator(2, 7, 2))).toEqual([2, 4, 6]);
+        expect(Array.from(range(2, 7, 2))).toEqual([2, 4, 6]);
     });
 
     it("should iterate backwards if the step is negative", () => {
-        expect(Array.from(rangeIterator(7, 2, -2))).toEqual([7, 5, 3]);
+        expect(Array.from(range(7, 2, -2))).toEqual([7, 5, 3]);
     });
 
     it("should be empty if start is at least end and step is positive", () => {
-        expect(Array.from(rangeIterator(2, 2))).toEqual([]);
-        expect(Array.from(rangeIterator(3, 2))).toEqual([]);
+        expect(Array.from(range(2, 2))).toEqual([]);
+        expect(Array.from(range(3, 2))).toEqual([]);
     });
 
     it("should be empty if start is at most end and step is negative", () => {
-        expect(Array.from(rangeIterator(2, 2, -1))).toEqual([]);
-        expect(Array.from(rangeIterator(2, 3, -1))).toEqual([]);
+        expect(Array.from(range(2, 2, -1))).toEqual([]);
+        expect(Array.from(range(2, 3, -1))).toEqual([]);
     });
 
     it("should throw if step is 0", () => {
-        expect(() => rangeIterator(1, 5, 0)).toThrowError(/0/);
+        expect(() => range(1, 5, 0)).toThrowError(/0/);
     });
 });
+
+describe("repeat()", () => {
+    it("should repeat the input indefinitely with one argument", () => {
+        expect(
+            chainFrom(repeat("x"))
+                .take(3)
+                .toArray(),
+        ).toEqual(["x", "x", "x"]);
+    });
+
+    it("should repeat the value count times with two arguments", () => {
+        expect(Array.from(repeat("x", 3))).toEqual(["x", "x", "x"]);
+    });
+
+    it("should produce an empty iterator if count is 0", () => {
+        expect(Array.from(repeat("x", 0))).toEqual([]);
+    });
+
+    it("should throw an error if count is negative", () => {
+        expect(() => repeat("x", -1)).toThrowError(/negative/);
+    });
+});
+
+describe("iterate()", () => {
+    it("should generate a sequence by repeatedly calling the function", () => {
+        expect(
+            chainFrom(iterate(1, x => x * 2))
+                .take(5)
+                .toArray(),
+        ).toEqual([1, 2, 4, 8, 16]);
+    });
+});
+
+describe("cycle()", () => {
+    it("should repeat an iterable indefinitely", () => {
+        expect(
+            chainFrom(cycle(["a", "b", "c"]))
+                .take(7)
+                .toArray(),
+        ).toEqual(["a", "b", "c", "a", "b", "c", "a"]);
+    });
+
+    it("should produce an empty iterator if input is empty", () => {
+        expect(Array.from(cycle([]))).toEqual([]);
+    });
+});
+
+function getIterableIterator<T>(iterable: Iterable<T>): IterableIterator<T> {
+    return iterable[Symbol.iterator]() as IterableIterator<T>;
+}
