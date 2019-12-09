@@ -177,8 +177,12 @@ export function filter<T>(pred: (item: T) => boolean): Transducer<T, T> {
     return xf => new Filter(xf, pred);
 }
 
-class FlatMap<TResult, TCompleteResult, TInput, TOutput>
-    implements CompletingTransformer<TResult, TCompleteResult, TInput> {
+class Flatten<
+    TResult,
+    TCompleteResult,
+    TInput extends Iterable<TOutput>,
+    TOutput
+> implements CompletingTransformer<TResult, TCompleteResult, TInput> {
     private readonly step: QuittingReducer<TResult, TOutput>;
 
     constructor(
@@ -187,7 +191,6 @@ class FlatMap<TResult, TCompleteResult, TInput, TOutput>
             TCompleteResult,
             TOutput
         >,
-        private readonly f: (item: TInput) => Iterable<TOutput>,
     ) {
         this.step = xf[STEP].bind(xf);
     }
@@ -201,12 +204,16 @@ class FlatMap<TResult, TCompleteResult, TInput, TOutput>
     }
 
     public [STEP](result: TResult, input: TInput): MaybeReduced<TResult> {
-        return reduceWithFunction(this.f(input), this.step, result);
+        return reduceWithFunction(input, this.step, result);
     }
 }
 
+export function flatten<T>(): Transducer<Iterable<T>, T> {
+    return xf => new Flatten(xf);
+}
+
 export function flatMap<T, U>(f: (item: T) => Iterable<U>): Transducer<T, U> {
-    return xf => new FlatMap(xf, f);
+    return xf => new MapTransformer(new Flatten(xf), f);
 }
 
 class Interpose<TResult, TCompleteResult, TInput>

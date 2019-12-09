@@ -13,6 +13,7 @@
     -   [`.dropWhile(pred)`](#dropwhilepred)
     -   [`.filter(pred)`](#filterpred)
     -   [`.flatMap(f)`](#flatmapf)
+    -   [`.flatten()`](#flatten)
     -   [`.interpose(separator)`](#interposeseparator)
     -   [`.map(f)`](#mapf)
     -   [`.mapIndexed(f)`](#mapindexedf)
@@ -143,6 +144,16 @@ chainFrom(authors)
     .flatMap(author => author.books)
     .toArray();
 // -> ["Jane Eyre", "Shirley", "Frankenstein"]
+```
+
+### `.flatten()`
+
+For a chain of iterables, concatenates the contents of each iterable. For example:
+
+```ts
+chainFrom([[0, 1], [2], [], [3, 4]])
+    .flatten()
+    .toArray(); // [0, 1, 2, 3, 4]
 ```
 
 ### `.interpose(separator)`

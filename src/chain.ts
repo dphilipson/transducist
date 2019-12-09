@@ -26,6 +26,7 @@ import {
     dropWhile,
     filter,
     flatMap,
+    flatten,
     interpose,
     map,
     mapIndexed,
@@ -44,6 +45,7 @@ import {
 } from "./types";
 
 export interface TransformChain<T> {
+    // tslint:disable: member-ordering
     compose<U>(transducer: Transducer<T, U>): TransformChain<U>;
 
     dedupe(): TransformChain<T>;
@@ -51,6 +53,7 @@ export interface TransformChain<T> {
     dropWhile(pred: (item: T) => boolean): TransformChain<T>;
     filter(pred: (item: T) => boolean): TransformChain<T>;
     flatMap<U>(f: (item: T) => Iterable<U>): TransformChain<U>;
+    flatten: T extends Iterable<infer U> ? () => TransformChain<U> : void;
     interpose(separator: T): TransformChain<T>;
     map<U>(f: (item: T) => U): TransformChain<U>;
     mapIndexed<U>(f: (item: T, index: number) => U): TransformChain<U>;
@@ -70,7 +73,6 @@ export interface TransformChain<T> {
         transformer: CompletingTransformer<TResult, TCompleteResult, T>,
     ): TCompleteResult;
 
-    // tslint:disable: member-ordering
     average: T extends number ? () => number | null : void;
     count(): number;
     every(pred: (item: T) => boolean): boolean;
@@ -106,12 +108,13 @@ export interface TransformChain<T> {
         transformer: CompletingTransformer<any, V, T>,
     ): Record<K, V>;
     toSet(): Set<T>;
-    // tslint:enable: member-ordering
 
     toIterator(): IterableIterator<T>;
+    // tslint:enable: member-ordering
 }
 
 export interface TransducerBuilder<TBase, T> {
+    // tslint:disable: member-ordering
     compose<U>(transducer: Transducer<T, U>): TransducerBuilder<TBase, U>;
 
     dedupe(): TransducerBuilder<TBase, T>;
@@ -119,6 +122,9 @@ export interface TransducerBuilder<TBase, T> {
     dropWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
     filter(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
     flatMap<U>(f: (item: T) => Iterable<U>): TransducerBuilder<TBase, U>;
+    flatten: T extends Iterable<infer U>
+        ? () => TransducerBuilder<TBase, U>
+        : void;
     interpose(separator: T): TransducerBuilder<TBase, T>;
     map<U>(f: (item: T) => U): TransducerBuilder<TBase, U>;
     mapIndexed<U>(
@@ -133,6 +139,7 @@ export interface TransducerBuilder<TBase, T> {
     takeWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
 
     build(): Transducer<TBase, T>;
+    // tslint:disable: member-ordering
 }
 
 export function chainFrom<T>(collection: Iterable<T>): TransformChain<T> {
@@ -140,7 +147,7 @@ export function chainFrom<T>(collection: Iterable<T>): TransformChain<T> {
 }
 
 export function transducerBuilder<T>(): TransducerBuilder<T, T> {
-    return new TransducerChain<T, T>([]);
+    return new TransducerChain<T, T>([]) as any;
 }
 
 type CombinedBuilder<TBase, T> = TransformChain<T> &
@@ -186,6 +193,11 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
     public flatMap<U>(f: (item: T) => Iterable<U>): CombinedBuilder<TBase, U> {
         return this.compose(flatMap(f));
+    }
+
+    // @ts-ignore
+    public flatten(): CombinedBuilder<TBase, any> {
+        return this.compose(flatten() as any);
     }
 
     public interpose(separator: T): CombinedBuilder<TBase, T> {

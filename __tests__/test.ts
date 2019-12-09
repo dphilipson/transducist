@@ -107,7 +107,7 @@ describe("flatMap()", () => {
         expect(result).toEqual(["a", "b", "b", "c", "c", "c"]);
     });
 
-    it("should work when mapping to iterators", () => {
+    it("should work when mapping to iterables", () => {
         const result = chainFrom(["a", "bb", "ccc"])
             .flatMap(s => range(s.length))
             .toArray();
@@ -127,6 +127,36 @@ describe("flatMap()", () => {
         );
         const result = chainFrom([0, 1, 2])
             .flatMap(n => iterators[n])
+            .take(5)
+            .toArray();
+        expect(result).toEqual([0, 1, 2, 0, 1]);
+        expect(iterators[0].next().done).toEqual(true);
+        expect(iterators[1].next().value).toEqual(2);
+        expect(iterators[2].next().value).toEqual(0);
+    });
+});
+
+describe("flatten()", () => {
+    it("should concatenate arrays", () => {
+        const result = chainFrom([["a", "b"], ["c", "d"], [], ["e"]])
+            .flatten()
+            .toArray();
+        expect(result).toEqual(["a", "b", "c", "d", "e"]);
+    });
+
+    it("should concatenate iterables", () => {
+        const result = chainFrom([range(2), range(2, 4), range(4, 5)])
+            .flatten()
+            .toArray();
+        expect(result).toEqual([0, 1, 2, 3, 4]);
+    });
+
+    it("should consume iterators only as much as necessary", () => {
+        const iterators = [range(3), range(3), range(3)].map(
+            getIterableIterator,
+        );
+        const result = chainFrom(iterators)
+            .flatten()
             .take(5)
             .toArray();
         expect(result).toEqual([0, 1, 2, 0, 1]);
