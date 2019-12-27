@@ -83,10 +83,10 @@ export interface TransformChain<T> {
     joinToString(separator: string): string;
     max: T extends number
         ? (comparator?: Comparator<number>) => number | null
-        : (comparator: Comparator<T>) => number | null;
+        : (comparator: Comparator<T>) => T | null;
     min: T extends number
         ? (comparator?: Comparator<number>) => number | null
-        : (comparator: Comparator<T>) => number | null;
+        : (comparator: Comparator<T>) => T | null;
     some(pred: (item: T) => boolean): boolean;
     sum: T extends number ? () => number : void;
     toArray(): T[];
@@ -305,11 +305,6 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
 
     public joinToString(separator: string): string {
         return this.reduce(joinToString(separator));
-    }
-
-    // @ts-ignore
-    public max(comparator: Comparator<T>): T | null {
-        return this.reduce(max(comparator));
     }
 
     // @ts-ignore
