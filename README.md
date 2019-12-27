@@ -13,6 +13,7 @@ Status](https://travis-ci.org/dphilipson/transducist.svg?branch=master)](https:/
 -   [Goals](#goals)
 -   [Installation](#installation)
 -   [Basic Usage](#basic-usage)
+    -   [Iterable utilities](#iterable-utilities)
 -   [Advanced Usage](#advanced-usage)
     -   [Using custom transducers](#using-custom-transducers)
     -   [Using custom reductions](#using-custom-reductions)
@@ -150,6 +151,32 @@ many others. For a particularly interesting one, see
 
 For a list of all possible transformations and terminations, [see the full API
 docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#api).
+
+### Iterable utilities
+
+Transducist also comes with a handful of iterable helpers for common sequences,
+which are often useful as the starter for a chain. For example:
+
+```ts
+chainFrom(range(5))
+    .map(i => i * i)
+    .toArray(); // -> [0, 1, 4, 9, 16]
+
+chainFrom(repeat("x", 5)).joinToString(""); // -> "xxxxx"
+```
+
+All such iterables generate values only when needed, which means they can
+represent even infinite sequences:
+
+```ts
+chainFrom(range(0, Number.POSITIVE_INFINITY))
+    .map(n => n * n)
+    .takeWhile(n => n < 20)
+    .toArray(); // -> [0, 1, 4, 9, 16]
+```
+
+For a full list of iterables, [see the Iterables
+docs](https://github.com/dphilipson/transducist/blob/master/docs/api.md#iterables).
 
 ## Advanced Usage
 
