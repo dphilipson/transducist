@@ -1,7 +1,6 @@
 {
     "compilerOptions": {
         "inlineSources": true,
-        "module": "es2015",
         "noEmit": false,
         "outDir": "dist/cjs",
         "sourceMap": true
