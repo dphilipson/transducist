@@ -51,6 +51,7 @@ export interface TransformChain<T> {
     dedupe(): TransformChain<T>;
     drop(n: number): TransformChain<T>;
     dropWhile(pred: (item: T) => boolean): TransformChain<T>;
+    filter<U extends T>(pred: (item: T) => item is U): TransformChain<U>;
     filter(pred: (item: T) => boolean): TransformChain<T>;
     flatMap<U>(f: (item: T) => Iterable<U>): TransformChain<U>;
     flatten: T extends Iterable<infer U> ? () => TransformChain<U> : void;
@@ -59,10 +60,14 @@ export interface TransformChain<T> {
     mapIndexed<U>(f: (item: T, index: number) => U): TransformChain<U>;
     partitionAll(n: number): TransformChain<T[]>;
     partitionBy(pred: (item: T) => any): TransformChain<T[]>;
+    remove<U extends T>(
+        pred: (item: T) => item is U,
+    ): TransformChain<Exclude<T, U>>;
     remove(pred: (item: T) => boolean): TransformChain<T>;
     removeAbsent(): TransformChain<NonNullable<T>>;
     take(n: number): TransformChain<T>;
     takeNth(n: number): TransformChain<T>;
+    takeWhile<U extends T>(pred: (item: T) => item is U): TransformChain<U>;
     takeWhile(pred: (item: T) => boolean): TransformChain<T>;
 
     reduce<TResult>(
@@ -76,6 +81,7 @@ export interface TransformChain<T> {
     average: T extends number ? () => number | null : void;
     count(): number;
     every(pred: (item: T) => boolean): boolean;
+    find<U extends T>(pred: (item: T) => item is U): U | null;
     find(pred: (item: T) => boolean): T | null;
     first(): T | null;
     forEach(f: (item: T) => void): void;
@@ -120,6 +126,9 @@ export interface TransducerBuilder<TBase, T> {
     dedupe(): TransducerBuilder<TBase, T>;
     drop(n: number): TransducerBuilder<TBase, T>;
     dropWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
+    filter<U extends T>(
+        pred: (item: T) => item is U,
+    ): TransducerBuilder<TBase, U>;
     filter(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
     flatMap<U>(f: (item: T) => Iterable<U>): TransducerBuilder<TBase, U>;
     flatten: T extends Iterable<infer U>
@@ -132,10 +141,16 @@ export interface TransducerBuilder<TBase, T> {
     ): TransducerBuilder<TBase, U>;
     partitionAll(n: number): TransducerBuilder<TBase, T[]>;
     partitionBy(pred: (item: T) => boolean): TransducerBuilder<TBase, T[]>;
+    remove<U extends T>(
+        pred: (item: T) => item is U,
+    ): TransducerBuilder<TBase, Exclude<T, U>>;
     remove(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
     removeAbsent(): TransducerBuilder<TBase, NonNullable<T>>;
     take(n: number): TransducerBuilder<TBase, T>;
     takeNth(n: number): TransducerBuilder<TBase, T>;
+    takeWhile<U extends T>(
+        pred: (item: T) => item is U,
+    ): TransducerBuilder<TBase, U>;
     takeWhile(pred: (item: T) => boolean): TransducerBuilder<TBase, T>;
 
     build(): Transducer<TBase, T>;
@@ -222,6 +237,10 @@ class TransducerChain<TBase, T> implements CombinedBuilder<TBase, T> {
         return this.compose(partitionBy(f));
     }
 
+    public remove<U extends T>(
+        pred: (item: T) => item is U,
+    ): CombinedBuilder<TBase, Exclude<T, U>>;
+    public remove(pred: (item: T) => boolean): CombinedBuilder<TBase, T>;
     public remove(pred: (item: T) => boolean): CombinedBuilder<TBase, T> {
         return this.compose(remove(pred));
     }

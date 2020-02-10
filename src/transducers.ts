@@ -172,7 +172,10 @@ class Filter<TResult, TCompleteResult, TInput>
         return this.pred(input) ? this.xf[STEP](result, input) : result;
     }
 }
-
+export function filter<T, U extends T>(
+    pred: (item: T) => item is U,
+): Transducer<T, U>;
+export function filter<T>(pred: (item: T) => boolean): Transducer<T, T>;
 export function filter<T>(pred: (item: T) => boolean): Transducer<T, T> {
     return xf => new Filter(xf, pred);
 }
@@ -473,6 +476,10 @@ class Take<TResult, TCompleteResult, TInput>
     }
 }
 
+export function remove<T, U extends T>(
+    pred: (item: T) => item is U,
+): Transducer<T, Exclude<T, U>>;
+export function remove<T>(pred: (item: T) => boolean): Transducer<T, T>;
 export function remove<T>(pred: (item: T) => boolean): Transducer<T, T> {
     return filter(item => !pred(item));
 }
@@ -550,6 +557,10 @@ class TakeWhile<TResult, TCompleteResult, TInput>
     }
 }
 
+export function takeWhile<T, U extends T>(
+    pred: (item: T) => item is U,
+): Transducer<T, U>;
+export function takeWhile<T>(pred: (item: T) => boolean): Transducer<T, T>;
 export function takeWhile<T>(pred: (item: T) => boolean): Transducer<T, T> {
     return xf => new TakeWhile(xf, pred);
 }

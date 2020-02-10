@@ -25,6 +25,10 @@ export function every<T>(pred: (item: T) => boolean): Transformer<boolean, T> {
     return remove(pred)(isEmpty());
 }
 
+export function find<T, U extends T>(
+    pred: (item: T) => item is U,
+): Transformer<U | null, T>;
+export function find<T>(pred: (item: T) => boolean): Transformer<T | null, T>;
 export function find<T>(pred: (item: T) => boolean): Transformer<T | null, T> {
     return filter(pred)(first());
 }
