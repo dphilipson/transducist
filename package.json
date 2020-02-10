@@ -1,6 +1,6 @@
 {
     "name": "transducist",
-    "version": "2.1.2",
+    "version": "2.2.0",
     "description": "Ergonomic JavaScript/TypeScript transducers for beginners and experts.",
     "module": "dist/esm/index.js",
     "main": "dist/cjs/index.js",
