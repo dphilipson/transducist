@@ -125,7 +125,7 @@ Keeps only the elements matching the predicate `pred`. For example:
 
 ```ts
 chainFrom([1, 2, 3, 4])
-    .map(x => x % 2 === 1)
+    .filter(x => x % 2 === 1)
     .toArray(); // -> [1, 3]
 ```
 
